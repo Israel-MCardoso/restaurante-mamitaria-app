@@ -1,0 +1,27 @@
+export const colors = {
+  primary: '#6B3E2E',
+  primaryHover: '#8A5642',
+  primarySoft: '#F0E2D7',
+  accent: '#D97706',
+  darkText: '#3E2723',
+  background: '#F7F1EB',
+  surface: '#FFFDFC',
+  surfaceMuted: '#F3E7DC',
+  white: '#FFFFFF',
+  black: '#000000',
+  textSecondary: '#6B6B6B',
+  textMuted: '#8B7E74',
+  success: '#2E7D32',
+  warning: '#F9A825',
+  error: '#C62828',
+  border: '#E0D5CB',
+  shadow: 'rgba(107, 62, 46, 0.16)',
+  status: {
+    pending: '#F9A825',
+    confirmed: '#6B3E2E',
+    preparing: '#8A5642',
+    shipped: '#E67E22',
+    delivered: '#2E7D32',
+    cancelled: '#C62828',
+  }
+};

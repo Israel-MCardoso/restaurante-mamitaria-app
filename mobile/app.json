@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Restaurante Admin",
+    "slug": "restaurante-admin",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.restaurante.admin",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF"
+      }
+    }
+  }
+}

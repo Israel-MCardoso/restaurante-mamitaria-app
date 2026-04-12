@@ -1,0 +1,108 @@
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import { ShieldCheck } from 'lucide-react-native';
+import { supabase } from '../lib/supabase';
+import { AppScreen } from '../components/layout/AppScreen';
+import { Button } from '../components/ui/Button';
+import { Card } from '../components/ui/Card';
+import { Input } from '../components/ui/Input';
+import { colors } from '../theme/colors';
+import { radius } from '../theme/radius';
+import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
+
+export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin() {
+    if (!email || !password) {
+      Alert.alert('Campos obrigatórios', 'Informe e-mail e senha para entrar.');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      Alert.alert('Erro ao entrar', error.message);
+    }
+
+    setLoading(false);
+  }
+
+  return (
+    <AppScreen scrollable keyboardAware contentContainerStyle={styles.content}>
+      <View style={styles.hero}>
+        <View style={styles.logoWrap}>
+          <ShieldCheck size={36} color={colors.white} />
+        </View>
+        <Text style={styles.eyebrow}>Painel do restaurante</Text>
+        <Text style={styles.title}>Controle pedidos, cardápio e operação em um só lugar.</Text>
+        <Text style={styles.subtitle}>
+          Entre com sua conta para acompanhar o dia, ajustar produtos e responder rápido aos pedidos.
+        </Text>
+      </View>
+
+      <Card style={styles.card}>
+        <Input
+          label="E-mail"
+          placeholder="voce@restaurante.com"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+        />
+        <Input
+          label="Senha"
+          placeholder="Digite sua senha"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <Button title="Entrar no painel" onPress={handleLogin} loading={loading} />
+      </Card>
+
+      <Text style={styles.footer}>Ambiente administrativo conectado ao Supabase.</Text>
+    </AppScreen>
+  );
+}
+
+const styles = StyleSheet.create({
+  content: {
+    justifyContent: 'center',
+  },
+  hero: {
+    marginBottom: spacing.huge,
+  },
+  logoWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: radius.lg,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  eyebrow: {
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: spacing.sm,
+  },
+  title: {
+    ...typography.hero,
+  },
+  subtitle: {
+    ...typography.body,
+    marginTop: spacing.md,
+  },
+  card: {
+    padding: spacing.xl,
+  },
+  footer: {
+    ...typography.caption,
+    textAlign: 'center',
+    marginTop: spacing.huge,
+  },
+});

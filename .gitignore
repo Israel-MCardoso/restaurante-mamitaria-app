@@ -1,0 +1,46 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env*.example
+
+# Node / Next
+web/node_modules/
+web/.next/
+web/.npm-cache/
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+
+# Mobile / Expo / React Native
+mobile/node_modules/
+mobile/.expo/
+mobile/.expo-shared/
+mobile/npm-debug.log*
+mobile/yarn-debug.log*
+mobile/yarn-error.log*
+
+# Android native build artifacts
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/local.properties
+mobile/android/app/build/
+mobile/android/app/debug.keystore
+*.apk
+*.aab
+
+# Generic build outputs
+dist/
+build/
+coverage/
+
+# Logs / temp
+*.log
+tmp/
+temp/
