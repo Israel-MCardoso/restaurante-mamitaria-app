@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase';
 import { StorefrontExperience } from '@/components/storefront/StorefrontExperience';
+import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
 
 type RestaurantRecord = {
   id: string;
@@ -118,6 +119,10 @@ export default async function RestaurantPage({ params }: { params: Promise<{ slu
   }
 
   return (
-    <StorefrontExperience restaurant={restaurant} categories={restaurant.categories} />
+    <>
+      <SiteHeader fallbackMenuHref={`/${restaurant.slug}`} />
+      <StorefrontExperience restaurant={restaurant} categories={restaurant.categories} />
+      <SiteFooter />
+    </>
   );
 }

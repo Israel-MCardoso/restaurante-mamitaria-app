@@ -1,5 +1,6 @@
-import { redirect } from 'next/navigation';
 import { getSupabaseClient } from '@/lib/supabase';
+import { MarketingHomePage } from '@/components/site/MarketingHomePage';
+import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,20 +29,11 @@ async function getDefaultRestaurantSlug() {
 export default async function HomePage() {
   const slug = await getDefaultRestaurantSlug();
 
-  if (slug) {
-    redirect(`/${slug}`);
-  }
-
   return (
-    <main className="min-h-screen bg-gray-50">
-      <div className="mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6 py-16">
-        <div className="w-full rounded-2xl bg-white p-8 text-center shadow-sm border border-gray-100">
-          <h1 className="text-2xl font-bold text-gray-900">Loja indisponivel no momento</h1>
-          <p className="mt-3 text-sm text-gray-600">
-            Nao foi encontrada nenhuma loja ativa para abrir na pagina inicial.
-          </p>
-        </div>
-      </div>
-    </main>
+    <>
+      <SiteHeader fallbackMenuHref={slug ? `/${slug}` : '/checkout'} />
+      <MarketingHomePage storefrontHref={slug ? `/${slug}` : null} />
+      <SiteFooter />
+    </>
   );
 }

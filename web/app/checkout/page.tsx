@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { ArrowLeft, ClipboardList, LoaderCircle, ShieldCheck, ShoppingBag } from 'lucide-react';
 import type { CreateOrderRequest } from '@/lib/contracts';
 import { useCart } from '@/contexts/CartContext';
 import { useStorefront } from '@/contexts/StorefrontContext';
+import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
 import {
   clearPendingOrderAttempt,
   createPublicOrder,
@@ -99,169 +101,240 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Checkout</p>
-          <h1 className="mt-2 text-3xl font-bold text-stone-950">Finalizar Pedido</h1>
-          <p className="mt-2 text-sm text-stone-600">
-            Revise seus itens e confirme o envio com os dados de entrega.
-          </p>
-        </div>
-        {restaurant?.slug ? (
-          <Link href={`/${restaurant.slug}`} className="text-sm font-medium text-stone-600 underline-offset-4 hover:underline">
-            Voltar para a loja
-          </Link>
-        ) : null}
-      </div>
-
-      {items.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-10 text-center shadow-sm">
-          <h2 className="text-xl font-semibold text-stone-900">Seu carrinho está vazio</h2>
-          <p className="mt-3 text-sm text-stone-600">
-            Adicione produtos na loja antes de seguir para o checkout.
-          </p>
-          {restaurant?.slug ? (
+    <>
+      <SiteHeader fallbackMenuHref={restaurant?.slug ? `/${restaurant.slug}` : '/'} />
+      <main className="page-shell pt-32">
+        <section className="section-shell min-h-screen pb-28 lg:pb-0">
+          <div className="content-shell">
             <Link
-              href={`/${restaurant.slug}`}
-              className="mt-6 inline-flex rounded-2xl bg-stone-950 px-5 py-3 text-sm font-semibold text-white hover:bg-stone-800"
+              href={restaurant?.slug ? `/${restaurant.slug}` : '/'}
+              className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
+              style={{ color: 'rgba(53, 39, 34, 0.68)' }}
             >
-              Escolher produtos
+              <ArrowLeft className="h-4 w-4" />
+              Voltar ao cardapio
             </Link>
-          ) : null}
-        </div>
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <section className="rounded-lg border bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold">Dados Pessoais</h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <input
-                  className="rounded border p-2"
-                  placeholder="Nome completo"
-                  required
-                  value={formData.name}
-                  onChange={(event) => setFormData({ ...formData, name: event.target.value })}
-                />
-                <input
-                  className="rounded border p-2"
-                  placeholder="WhatsApp/Telefone"
-                  required
-                  value={formData.phone}
-                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
-                />
-                <input
-                  className="rounded border p-2 md:col-span-2"
-                  placeholder="E-mail para pagamento Pix"
-                  required={formData.paymentMethod === 'pix'}
-                  type="email"
-                  value={formData.email}
-                  onChange={(event) => setFormData({ ...formData, email: event.target.value })}
-                />
-              </div>
-            </section>
 
-            <section className="rounded-lg border bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold">Endereço de Entrega</h2>
-              <div className="space-y-4">
-                <input
-                  className="w-full rounded border p-2"
-                  placeholder="Rua / Logradouro"
-                  required
-                  value={formData.street}
-                  onChange={(event) => setFormData({ ...formData, street: event.target.value })}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <input
-                    className="rounded border p-2"
-                    placeholder="Número"
-                    required
-                    value={formData.number}
-                    onChange={(event) => setFormData({ ...formData, number: event.target.value })}
-                  />
-                  <input
-                    className="rounded border p-2"
-                    placeholder="Cidade"
-                    required
-                    value={formData.city}
-                    onChange={(event) => setFormData({ ...formData, city: event.target.value })}
-                  />
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-lg border bg-white p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold">Pagamento</h2>
-              <select
-                className="w-full rounded border p-2"
-                value={formData.paymentMethod}
-                onChange={(event) => setFormData({ ...formData, paymentMethod: event.target.value })}
-              >
-                <option value="pix">Pix</option>
-                <option value="cash">Dinheiro na entrega</option>
-                <option value="card">Cartão na entrega</option>
-              </select>
-            </section>
-
-            {feedbackMessage ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {feedbackMessage}
-              </div>
-            ) : null}
-
-            <div className="flex items-center justify-between rounded-lg bg-gray-100 p-4">
-              <div>
-                <p className="text-gray-600">Total final confirmado após o envio</p>
-                <p className="text-sm text-gray-500">
-                  O backend recalcula subtotal, taxa e descontos antes de criar o pedido.
+            {items.length === 0 ? (
+              <div className="soft-card mt-8 rounded-[2rem] p-10 text-center">
+                <h1 className="text-[3rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+                  Seu carrinho esta vazio.
+                </h1>
+                <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
+                  Adicione produtos na loja antes de seguir para o checkout.
                 </p>
+                {restaurant?.slug ? (
+                  <Link href={`/${restaurant.slug}`} className="premium-button mt-6 px-8 py-4 sm:w-auto">
+                    Escolher produtos
+                  </Link>
+                ) : null}
               </div>
-              <button
-                type="submit"
-                disabled={isSubmitting || items.length === 0}
-                className="rounded-lg bg-green-600 px-8 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50"
-              >
-                {isSubmitting ? 'Processando...' : 'Confirmar Pedido'}
-              </button>
-            </div>
-          </form>
-
-          <aside className="h-fit rounded-3xl border border-stone-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Resumo</p>
-            <h2 className="mt-2 text-2xl font-semibold text-stone-900">Seu carrinho</h2>
-            <div className="mt-6 space-y-4">
-              {items.map((item) => (
-                <div key={item.id} className="flex items-start justify-between gap-3 border-b border-stone-100 pb-4">
-                  <div>
-                    <p className="font-medium text-stone-900">{item.name}</p>
-                    <p className="text-sm text-stone-500">{item.quantity}x item</p>
-                  </div>
-                  <p className="text-sm font-semibold text-stone-900">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price * item.quantity)}
+            ) : (
+              <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.45fr)] lg:items-start">
+                <div className="soft-card rounded-[2rem] p-7 sm:p-9">
+                  <span className="section-kicker">Checkout</span>
+                  <h1
+                    className="mt-4 max-w-[12ch] text-[clamp(3.2rem,6vw,5rem)] leading-[0.94] tracking-[-0.05em]"
+                    style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+                  >
+                    Dados para entrega.
+                  </h1>
+                  <p className="mt-5 max-w-2xl text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
+                    Confirme seus dados e finalize o pedido usando o backend canonico ja publicado.
                   </p>
+
+                  <div className="mt-7 grid gap-3 sm:grid-cols-3">
+                    {[
+                      { icon: ClipboardList, text: 'Pedido confirmado na hora' },
+                      { icon: ShieldCheck, text: 'Valores validados no backend' },
+                      { icon: ShoppingBag, text: `${itemCount} itens no carrinho` },
+                    ].map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={item.text}
+                          className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm"
+                          style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)', color: 'var(--ink-muted)' }}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" style={{ color: 'var(--brand)' }} />
+                          <span>{item.text}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <form id="checkout-form" className="mt-9 grid gap-7" onSubmit={handleSubmit}>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Field
+                        label="Nome"
+                        value={formData.name}
+                        onChange={(value) => setFormData((current) => ({ ...current, name: value }))}
+                        autoComplete="name"
+                      />
+                      <Field
+                        label="Telefone"
+                        value={formData.phone}
+                        onChange={(value) => setFormData((current) => ({ ...current, phone: value }))}
+                        autoComplete="tel"
+                      />
+                    </div>
+
+                    <Field
+                      label="E-mail para Pix"
+                      value={formData.email}
+                      onChange={(value) => setFormData((current) => ({ ...current, email: value }))}
+                      type="email"
+                      autoComplete="email"
+                    />
+
+                    <div className="grid gap-4 sm:grid-cols-[1fr_0.45fr]">
+                      <Field
+                        label="Rua"
+                        value={formData.street}
+                        onChange={(value) => setFormData((current) => ({ ...current, street: value }))}
+                        autoComplete="address-line1"
+                      />
+                      <Field
+                        label="Numero"
+                        value={formData.number}
+                        onChange={(value) => setFormData((current) => ({ ...current, number: value }))}
+                        autoComplete="address-line2"
+                      />
+                    </div>
+
+                    <Field
+                      label="Cidade"
+                      value={formData.city}
+                      onChange={(value) => setFormData((current) => ({ ...current, city: value }))}
+                      autoComplete="address-level2"
+                    />
+
+                    <div className="grid gap-3">
+                      <span className="text-sm font-semibold" style={{ color: 'var(--ink-strong)' }}>
+                        Pagamento
+                      </span>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {[
+                          { value: 'pix', title: 'Pix', copy: 'QR Code e copia e cola apos criar o pedido.' },
+                          { value: 'cash', title: 'Dinheiro', copy: 'Pagamento na entrega.' },
+                          { value: 'card', title: 'Cartao', copy: 'Maquininha na entrega.' },
+                        ].map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setFormData((current) => ({ ...current, paymentMethod: option.value }))}
+                            className="rounded-[1.25rem] border p-4 text-left transition-colors"
+                            style={{
+                              backgroundColor:
+                                formData.paymentMethod === option.value ? 'rgba(200, 135, 63, 0.14)' : 'rgba(255,250,244,0.56)',
+                              borderColor:
+                                formData.paymentMethod === option.value ? 'rgba(200, 135, 63, 0.5)' : 'var(--line)',
+                            }}
+                          >
+                            <span className="block text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--brand)' }}>
+                              {option.title}
+                            </span>
+                            <span className="mt-2 block text-sm leading-6" style={{ color: 'var(--ink-muted)' }}>
+                              {option.copy}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {feedbackMessage ? (
+                      <div
+                        className="rounded-[1.25rem] border p-4"
+                        style={{ borderColor: 'rgba(212, 24, 61, 0.28)', backgroundColor: 'rgba(212, 24, 61, 0.05)' }}
+                      >
+                        <p className="text-sm leading-6" style={{ color: '#d4183d' }}>
+                          {feedbackMessage}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    <button type="submit" className="premium-button px-8 py-4 sm:w-auto" disabled={isSubmitting || items.length === 0}>
+                      {isSubmitting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <ClipboardList className="h-5 w-5" />}
+                      {isSubmitting ? 'Criando pedido...' : 'Finalizar pedido'}
+                    </button>
+                  </form>
                 </div>
-              ))}
-            </div>
-            <div className="mt-6 space-y-3 text-sm">
-              <div className="flex items-center justify-between text-stone-600">
-                <span>Itens</span>
-                <span>{itemCount}</span>
+
+                <aside className="soft-card sticky top-32 rounded-[2rem] p-6">
+                  <span className="section-kicker">Resumo</span>
+                  <div className="mt-5 grid gap-4">
+                    {items.map((item) => (
+                      <div key={item.id} className="flex gap-3 border-b pb-4" style={{ borderColor: 'var(--line)' }}>
+                        <div className="h-16 w-16 overflow-hidden rounded-[1rem] bg-white/60">
+                          {item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" /> : null}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold leading-5" style={{ color: 'var(--ink-strong)' }}>
+                            {item.name}
+                          </p>
+                          <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                            {item.quantity} x {formatMoney(item.price)}
+                          </p>
+                        </div>
+                        <strong className="whitespace-nowrap text-sm" style={{ color: 'var(--ink-strong)' }}>
+                          {formatMoney(item.price * item.quantity)}
+                        </strong>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 grid gap-3 text-sm">
+                    <div className="flex justify-between">
+                      <span style={{ color: 'var(--ink-muted)' }}>Subtotal estimado</span>
+                      <strong>{formatMoney(total)}</strong>
+                    </div>
+                    <div className="flex justify-between border-t pt-4 text-lg" style={{ borderColor: 'var(--line)', color: 'var(--ink-strong)' }}>
+                      <span>Total final</span>
+                      <strong>Confirmado pelo backend</strong>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-[1.25rem] border p-4 text-sm leading-6" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)', color: 'var(--ink-muted)' }}>
+                    O backend recalcula subtotal, taxa e descontos antes de criar o pedido.
+                  </div>
+                </aside>
               </div>
-              <div className="flex items-center justify-between text-stone-600">
-                <span>Subtotal estimado</span>
-                <span>
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-t border-stone-200 pt-3 text-base font-semibold text-stone-900">
-                <span>Total final</span>
-                <span>Confirmado pelo backend</span>
-              </div>
-            </div>
-          </aside>
-        </div>
-      )}
-    </div>
+            )}
+          </div>
+        </section>
+      </main>
+      <SiteFooter />
+    </>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  type = 'text',
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  autoComplete?: string;
+}) {
+  return (
+    <label className="grid gap-2">
+      <span className="text-sm font-semibold" style={{ color: 'var(--ink-strong)' }}>
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        type={type}
+        autoComplete={autoComplete}
+        className="rounded-full border bg-white/60 px-4 py-3 outline-none transition focus:border-[var(--gold)]"
+        style={{ borderColor: 'var(--line)' }}
+      />
+    </label>
   );
 }
 
@@ -298,4 +371,11 @@ function normalizeAddonSelections(addons: unknown) {
       };
     })
     .filter((addon): addon is { addon_id: string; quantity: number } => addon !== null);
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
 }

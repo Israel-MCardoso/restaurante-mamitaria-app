@@ -2,8 +2,15 @@
 
 import { use } from 'react';
 import { OrderTrackingView } from '@/components/order/OrderTrackingView';
+import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
 
 export default function PublicOrderTrackingPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return <OrderTrackingView orderId={id} />;
+  return (
+    <>
+      <SiteHeader fallbackMenuHref="/" />
+      <OrderTrackingView orderId={id} />
+      <SiteFooter />
+    </>
+  );
 }

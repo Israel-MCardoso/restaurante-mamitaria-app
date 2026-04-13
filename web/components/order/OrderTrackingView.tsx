@@ -18,7 +18,7 @@ interface OrderTrackingViewProps {
 }
 
 const statusMap: Record<CanonicalOrder['status'], string> = {
-  pending: 'Aguardando confirmação',
+  pending: 'Aguardando confirmacao',
   confirmed: 'Pedido confirmado',
   preparing: 'Na cozinha',
   out_for_delivery: 'Saiu para entrega',
@@ -88,7 +88,7 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
   useEffect(() => {
     if (!accessToken) {
-      setErrorMessage('Este pedido precisa do link original de acompanhamento para ser aberto com segurança.');
+      setErrorMessage('Este pedido precisa do link original de acompanhamento para ser aberto com seguranca.');
       return;
     }
 
@@ -123,7 +123,7 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
         if (error instanceof PublicOrderApiError) {
           setErrorMessage(error.message);
         } else {
-          setErrorMessage('Não foi possível atualizar o status do pedido agora.');
+          setErrorMessage('Nao foi possivel atualizar o status do pedido agora.');
         }
 
         pollTimeoutRef.current = setTimeout(loadOrder, 10000);
@@ -161,120 +161,142 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
     try {
       await navigator.clipboard.writeText(pixCode);
-      setCopyFeedback('Código Pix copiado.');
+      setCopyFeedback('Codigo Pix copiado.');
     } catch (error) {
       console.error('Failed to copy Pix code', error);
-      setCopyFeedback('Não foi possível copiar o código Pix.');
+      setCopyFeedback('Nao foi possivel copiar o codigo Pix.');
     }
   };
 
   if (!order) {
-    return <div className="p-8 text-center">Carregando pedido...</div>;
+    return (
+      <main className="page-shell pt-32">
+        <section className="section-shell min-h-screen">
+          <div className="content-shell">
+            <div className="soft-card flex min-h-[360px] items-center justify-center rounded-[2rem] p-8 text-center">
+              <div>
+                <Clock className="mx-auto h-8 w-8" style={{ color: 'var(--brand)' }} />
+                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--ink-muted)' }}>
+                  Carregando pedido
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
   }
 
   return (
-    <div className="max-w-xl mx-auto p-4 py-12">
-      <div className="text-center mb-8">
-        <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold">Pedido Recebido!</h1>
-        <p className="text-gray-600">Seu pedido #{order.order_number} já está sendo acompanhado em tempo real.</p>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="font-bold text-lg mb-4">Status do Pedido</h2>
-        <div className="flex items-center gap-4 p-4 bg-orange-50 rounded-lg border border-orange-100">
-          <Clock className="text-orange-600" />
-          <div>
-            <p className="font-bold text-orange-800">{statusMap[order.status]}</p>
-            <p className="text-sm text-orange-600">Atualizado automaticamente</p>
-          </div>
-        </div>
-
-        {errorMessage ? (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {errorMessage}
-          </div>
-        ) : null}
-
-        {history.length > 0 ? (
-          <div className="mt-6 space-y-3">
-            {history.map((entry, index) => (
-              <div
-                key={`${entry.status}-${entry.changed_at}-${index}`}
-                className="flex items-start justify-between gap-3 text-sm"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{statusMap[entry.status]}</p>
-                  {entry.note ? <p className="text-gray-500">{entry.note}</p> : null}
-                </div>
-                <span className="text-gray-500 whitespace-nowrap">{formatDateTime(entry.changed_at)}</span>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-6">
-        <h2 className="font-bold text-lg mb-4">Pagamento</h2>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-gray-700">Forma de pagamento</p>
-            <p className="font-semibold uppercase">{order.payment_method}</p>
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-gray-700">Status do pagamento</p>
-            <p className="font-semibold">{paymentStatusMap[order.payment_status]}</p>
-          </div>
-
-          {order.payment_method === 'pix' && order.payment_data?.copy_paste_code ? (
-            <div className="pt-2">
-              <p className="text-sm text-gray-600 mb-3">Use o código Pix abaixo para concluir o pagamento.</p>
-              {order.payment_data.qr_code_base64 ? (
-                <div className="mb-3 flex justify-center rounded-lg border bg-white p-3">
-                  <img
-                    src={resolveQrImageSrc(order.payment_data.qr_code_base64)}
-                    alt="QR Code Pix"
-                    className="h-48 w-48"
-                  />
-                </div>
-              ) : null}
-              <div className="rounded-lg border bg-gray-50 p-3 break-all text-sm text-gray-700">
-                {order.payment_data.copy_paste_code}
-              </div>
-              <button
-                type="button"
-                onClick={handleCopyPixCode}
-                className="mt-3 inline-flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700"
-              >
-                <Copy className="w-4 h-4" />
-                Copiar código Pix
-              </button>
-              {copyFeedback ? <p className="text-sm text-gray-600 mt-2">{copyFeedback}</p> : null}
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border p-6">
-        <h2 className="font-bold text-lg mb-4">Resumo da Entrega</h2>
-        <div className="space-y-4">
-          {order.delivery_address ? (
-            <div className="flex gap-3">
-              <MapPin className="text-gray-400 w-5" />
-              <p className="text-gray-700">
-                {order.delivery_address.street}, {order.delivery_address.number} - {order.delivery_address.city}
-              </p>
-            </div>
-          ) : null}
-          <div className="flex gap-3">
-            <Package className="text-gray-400 w-5" />
-            <p className="text-gray-700">
-              Total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.total_amount)}
+    <main className="page-shell pt-32">
+      <section className="section-shell min-h-screen">
+        <div className="content-shell">
+          <div className="mb-8 text-center">
+            <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
+            <h1 className="text-[3.2rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+              Pedido recebido!
+            </h1>
+            <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
+              Seu pedido #{order.order_number} ja esta sendo acompanhado em tempo real.
             </p>
           </div>
+
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.45fr)] lg:items-start">
+            <div className="soft-card rounded-[2rem] p-7 sm:p-9">
+              <span className="section-kicker">Acompanhamento</span>
+              <h2 className="mt-4 text-[clamp(3rem,5vw,4.6rem)] leading-[0.94] tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+                {statusMap[order.status]}
+              </h2>
+              <div className="mt-6 flex items-center gap-4 rounded-[1.25rem] border p-4" style={{ backgroundColor: 'rgba(200, 135, 63, 0.08)', borderColor: 'rgba(200, 135, 63, 0.18)' }}>
+                <Clock style={{ color: 'var(--brand)' }} />
+                <div>
+                  <p className="font-bold" style={{ color: 'var(--brand)' }}>{statusMap[order.status]}</p>
+                  <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>Atualizado automaticamente</p>
+                </div>
+              </div>
+
+              {errorMessage ? (
+                <div className="mt-4 rounded-[1.25rem] border px-4 py-3 text-sm" style={{ borderColor: '#f0d7a6', backgroundColor: '#fff8e7', color: '#946200' }}>
+                  {errorMessage}
+                </div>
+              ) : null}
+
+              {history.length > 0 ? (
+                <div className="mt-8 space-y-4">
+                  {history.map((entry, index) => (
+                    <div
+                      key={`${entry.status}-${entry.changed_at}-${index}`}
+                      className="flex items-start justify-between gap-3 rounded-[1.25rem] border p-4 text-sm"
+                      style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)' }}
+                    >
+                      <div>
+                        <p className="font-medium" style={{ color: 'var(--ink-strong)' }}>{statusMap[entry.status]}</p>
+                        {entry.note ? <p style={{ color: 'var(--ink-muted)' }}>{entry.note}</p> : null}
+                      </div>
+                      <span className="whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>{formatDateTime(entry.changed_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <aside className="soft-card rounded-[2rem] p-6">
+              <span className="section-kicker">Resumo</span>
+              <div className="mt-5 grid gap-3 text-sm">
+                <div className="flex items-center justify-between gap-4">
+                  <p style={{ color: 'var(--ink-muted)' }}>Forma de pagamento</p>
+                  <p className="font-semibold uppercase">{order.payment_method}</p>
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <p style={{ color: 'var(--ink-muted)' }}>Status do pagamento</p>
+                  <p className="font-semibold">{paymentStatusMap[order.payment_status]}</p>
+                </div>
+
+                {order.payment_method === 'pix' && order.payment_data?.copy_paste_code ? (
+                  <div className="pt-2">
+                    <p className="mb-3 text-sm" style={{ color: 'var(--ink-muted)' }}>Use o codigo Pix abaixo para concluir o pagamento.</p>
+                    {order.payment_data.qr_code_base64 ? (
+                      <div className="mb-3 flex justify-center rounded-lg border bg-white p-3" style={{ borderColor: 'var(--line)' }}>
+                        <img
+                          src={resolveQrImageSrc(order.payment_data.qr_code_base64)}
+                          alt="QR Code Pix"
+                          className="h-48 w-48"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="rounded-lg border p-3 break-all text-sm" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)', color: 'var(--ink)' }}>
+                      {order.payment_data.copy_paste_code}
+                    </div>
+                    <button type="button" onClick={handleCopyPixCode} className="premium-button mt-3 px-4 py-3 sm:w-auto">
+                      <Copy className="h-4 w-4" />
+                      Copiar codigo Pix
+                    </button>
+                    {copyFeedback ? <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>{copyFeedback}</p> : null}
+                  </div>
+                ) : null}
+
+                <div className="mt-6 space-y-4 border-t pt-4" style={{ borderColor: 'var(--line)' }}>
+                  {order.delivery_address ? (
+                    <div className="flex gap-3">
+                      <MapPin className="w-5" style={{ color: 'var(--ink-muted)' }} />
+                      <p style={{ color: 'var(--ink)' }}>
+                        {order.delivery_address.street}, {order.delivery_address.number} - {order.delivery_address.city}
+                      </p>
+                    </div>
+                  ) : null}
+                  <div className="flex gap-3">
+                    <Package className="w-5" style={{ color: 'var(--ink-muted)' }} />
+                    <p style={{ color: 'var(--ink)' }}>
+                      Total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.total_amount)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 
