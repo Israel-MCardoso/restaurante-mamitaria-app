@@ -40,7 +40,7 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
   }
 
   if (!idempotencyKey || idempotencyKey.trim().length === 0) {
-    throw new ApiError(400, 'MISSING_IDEMPOTENCY_KEY', 'Idempotency-Key header is required.');
+    throw new ApiError(400, 'MISSING_IDEMPOTENCY_KEY', 'Não foi possível concluir a solicitação agora. Tente novamente.');
   }
 
   const supabase = getSupabaseAdminClient();
@@ -62,11 +62,11 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
   const accessToken = response?.access_token;
 
   if (!order) {
-    throw new ApiError(500, 'ORDER_CREATION_FAILED', 'Order creation returned an empty response.');
+    throw new ApiError(500, 'ORDER_CREATION_FAILED', 'Não foi possível concluir seu pedido agora. Tente novamente em instantes.');
   }
 
   if (!accessToken || accessToken.trim().length === 0) {
-    throw new ApiError(500, 'INVALID_ORDER_RESPONSE', 'Backend did not return an order access token.');
+    throw new ApiError(500, 'INVALID_ORDER_RESPONSE', 'Não foi possível concluir seu pedido agora. Tente novamente em instantes.');
   }
 
   const orderIssues = validateCanonicalOrder(order);
@@ -76,7 +76,7 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
     throw new ApiError(
       500,
       'INVALID_ORDER_RESPONSE',
-      `Backend returned an invalid canonical order: ${firstIssue.message}`,
+      'Não foi possível concluir seu pedido agora. Tente novamente em instantes.',
       firstIssue.field,
     );
   }
@@ -92,11 +92,11 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
 
 export async function getOrderById(orderId: string, accessToken: string): Promise<CanonicalOrder> {
   if (!orderId || orderId.trim().length === 0) {
-    throw new ApiError(400, 'INVALID_ORDER_ID', 'Order id is required.', 'order_id');
+    throw new ApiError(400, 'INVALID_ORDER_ID', 'Não foi possível localizar o pedido.', 'order_id');
   }
 
   if (!accessToken || accessToken.trim().length === 0) {
-    throw new ApiError(401, 'MISSING_ORDER_ACCESS_TOKEN', 'Order access token is required.');
+    throw new ApiError(401, 'MISSING_ORDER_ACCESS_TOKEN', 'Abra este pedido pelo link que você recebeu para acompanhar as atualizações.');
   }
 
   const supabase = getSupabaseAdminClient();
@@ -114,7 +114,7 @@ export async function getOrderById(orderId: string, accessToken: string): Promis
   const order = response?.order;
 
   if (!order) {
-    throw new ApiError(404, 'ORDER_NOT_FOUND', 'Order not found.');
+    throw new ApiError(404, 'ORDER_NOT_FOUND', 'Não encontramos esse pedido.');
   }
 
   const orderIssues = validateCanonicalOrder(order);
@@ -124,7 +124,7 @@ export async function getOrderById(orderId: string, accessToken: string): Promis
     throw new ApiError(
       500,
       'INVALID_ORDER_RESPONSE',
-      `Backend returned an invalid canonical order: ${firstIssue.message}`,
+      'Não foi possível carregar o pedido agora. Tente novamente em instantes.',
       firstIssue.field,
     );
   }
@@ -183,7 +183,7 @@ async function updateOrderPaymentData(
     throw new ApiError(
       500,
       'INVALID_ORDER_RESPONSE',
-      `Backend returned an invalid canonical order: ${firstIssue.message}`,
+      'Não foi possível atualizar as informações de pagamento agora. Tente novamente em instantes.',
       firstIssue.field,
     );
   }
@@ -212,7 +212,7 @@ function extractPixPayerEmail(payload: unknown) {
   const email = customer?.email?.trim();
 
   if (!email) {
-    throw new ApiError(400, 'PIX_PAYER_EMAIL_REQUIRED', 'Customer email is required for Pix payments.', 'customer.email');
+    throw new ApiError(400, 'PIX_PAYER_EMAIL_REQUIRED', 'Informe um e-mail válido para receber o pagamento via Pix.', 'customer.email');
   }
 
   return email;
@@ -270,9 +270,9 @@ function humanizeErrorCode(code: string) {
     case 'RESTAURANT_NOT_FOUND':
       return 'Restaurant not found.';
     case 'ORDER_NOT_FOUND':
-      return 'Order not found.';
+      return 'Pedido não encontrado.';
     case 'ORDER_ACCESS_DENIED':
-      return 'You do not have access to this order.';
+      return 'Abra este pedido pelo link que você recebeu para acompanhar as atualizações.';
     case 'INVALID_ORDER_STATUS':
       return 'The requested order status transition is invalid.';
     case 'INVALID_PAYMENT_STATUS':
@@ -280,7 +280,7 @@ function humanizeErrorCode(code: string) {
     case 'RESTAURANT_INACTIVE':
       return 'Restaurant is not accepting orders right now.';
     case 'MINIMUM_ORDER_NOT_REACHED':
-      return 'Order total is below the restaurant minimum.';
+      return 'Seu pedido ainda não atingiu o valor mínimo da loja.';
     case 'PRODUCT_NOT_FOUND':
       return 'One or more selected products no longer exist.';
     case 'PRODUCT_UNAVAILABLE':
@@ -300,23 +300,23 @@ function humanizeErrorCode(code: string) {
     case 'INVALID_ADDON_QUANTITY':
       return 'One or more addons have an invalid quantity.';
     case 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD':
-      return 'This Idempotency-Key was already used with a different request payload.';
+      return 'Seu pedido mudou durante a confirmação. Revise os itens e tente novamente.';
     case 'MISSING_IDEMPOTENCY_KEY':
-      return 'Idempotency-Key header is required.';
+      return 'Não foi possível concluir a solicitação agora. Tente novamente.';
     case 'MISSING_ORDER_ACCESS_TOKEN':
-      return 'Order access token is required.';
+      return 'Abra este pedido pelo link que você recebeu para acompanhar as atualizações.';
     case 'PIX_PAYMENT_CREATION_FAILED':
-      return 'Unable to create the Pix payment with the payment provider.';
+      return 'Não foi possível gerar o Pix agora. Tente novamente em instantes.';
     case 'PIX_PAYMENT_DATA_MISSING':
-      return 'The payment provider did not return complete Pix QR data.';
+      return 'Não foi possível gerar o Pix agora. Tente novamente em instantes.';
     case 'PIX_PAYER_EMAIL_REQUIRED':
-      return 'Customer email is required for Pix payments.';
+      return 'Informe um e-mail válido para receber o pagamento via Pix.';
     case 'MISSING_MERCADO_PAGO_ACCESS_TOKEN':
-      return 'Mercado Pago access token is not configured.';
+      return 'O Pix está temporariamente indisponível.';
     case 'IDEMPOTENCY_RESPONSE_SYNC_FAILED':
-      return 'Unable to sync the idempotent order response after payment creation.';
+      return 'Não foi possível concluir seu pedido agora. Tente novamente em instantes.';
     default:
-      return 'Unable to process the order request.';
+      return 'Não foi possível processar seu pedido agora. Tente novamente em instantes.';
   }
 }
 

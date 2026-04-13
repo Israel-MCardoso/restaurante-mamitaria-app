@@ -3,8 +3,6 @@ import { ensureApiError, errorResponseBody, parseJsonBody } from '@/lib/api/erro
 import { createOrder } from '@/lib/api/orders';
 
 export async function POST(request: Request) {
-  const debugMode = request.headers.get('X-Debug-Order-Error') === '1';
-
   try {
     const payload = await parseJsonBody(request);
     const idempotencyKey = request.headers.get('Idempotency-Key') ?? '';
@@ -26,21 +24,10 @@ export async function POST(request: Request) {
     const apiError = ensureApiError(error, {
       status: 500,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Unexpected server error while creating the order.',
+      message: 'Não foi possível concluir o pedido agora. Tente novamente em instantes.',
     });
 
-    const baseBody = errorResponseBody(apiError);
-    const body: Record<string, unknown> = {
-      code: baseBody.code,
-      message: baseBody.message,
-      field: baseBody.field,
-    };
-
-    if (debugMode) {
-      body.debug = errorDetails;
-    }
-
-    return NextResponse.json(body, {
+    return NextResponse.json(errorResponseBody(apiError), {
       status: apiError.status,
       headers: {
         'Content-Type': 'application/json; charset=utf-8',

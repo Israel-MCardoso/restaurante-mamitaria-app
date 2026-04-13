@@ -23,7 +23,7 @@ export async function GET(
     const apiError = ensureApiError(error, {
       status: 500,
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Unexpected server error while loading the order.',
+      message: 'Não foi possível carregar o pedido agora. Tente novamente em instantes.',
     });
 
     return NextResponse.json(errorResponseBody(apiError), {

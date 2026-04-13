@@ -96,7 +96,7 @@ export async function createPublicOrder(
     throw new PublicOrderApiError(
       500,
       'MISSING_ORDER_ACCESS_TOKEN',
-      'Order access token was not returned by the backend.',
+      'Não foi possível concluir seu pedido agora. Tente novamente em instantes.',
     );
   }
 
@@ -266,17 +266,73 @@ async function parseJsonResponse(response: Response) {
     throw new PublicOrderApiError(
       500,
       'INVALID_API_RESPONSE',
-      'The backend returned an invalid JSON response.',
+      'Recebemos uma resposta inesperada. Tente novamente em instantes.',
     );
   }
 }
 
 function toPublicApiError(status: number, body: unknown) {
   if (isErrorResponseBody(body)) {
-    return new PublicOrderApiError(status, body.code, body.message, body.field);
+    return new PublicOrderApiError(status, body.code, humanizePublicError(body.code, body.message), body.field);
   }
 
-  return new PublicOrderApiError(status, 'UNEXPECTED_API_ERROR', 'Unexpected API error while processing the order.');
+  return new PublicOrderApiError(status, 'UNEXPECTED_API_ERROR', 'Não foi possível concluir sua solicitação agora. Tente novamente em instantes.');
+}
+
+function humanizePublicError(code: string, fallback: string) {
+  switch (code) {
+    case 'INVALID_REQUEST':
+      return 'Confira os dados do pedido e tente novamente.';
+    case 'MISSING_IDEMPOTENCY_KEY':
+      return 'Não foi possível concluir a solicitação agora. Tente novamente.';
+    case 'ORDER_NOT_FOUND':
+      return 'Não encontramos esse pedido.';
+    case 'ORDER_ACCESS_DENIED':
+    case 'MISSING_ORDER_ACCESS_TOKEN':
+      return 'Abra o pedido pelo link que você recebeu para acompanhar as atualizações.';
+    case 'RESTAURANT_NOT_FOUND':
+      return 'A loja informada não foi encontrada.';
+    case 'RESTAURANT_INACTIVE':
+      return 'A loja não está aceitando pedidos neste momento.';
+    case 'MINIMUM_ORDER_NOT_REACHED':
+      return 'Seu pedido ainda não atingiu o valor mínimo da loja.';
+    case 'PRODUCT_NOT_FOUND':
+    case 'PRODUCT_UNAVAILABLE':
+      return 'Um ou mais itens do seu carrinho não estão mais disponíveis.';
+    case 'ADDON_NOT_FOUND':
+    case 'ADDON_UNAVAILABLE':
+    case 'ADDON_NOT_ALLOWED':
+      return 'Algum complemento do seu pedido não está mais disponível.';
+    case 'DELIVERY_ADDRESS_REQUIRED':
+      return 'Preencha o endereço de entrega para continuar.';
+    case 'INVALID_ITEMS':
+    case 'INVALID_ITEM_QUANTITY':
+    case 'INVALID_ADDON_QUANTITY':
+      return 'Confira os itens do seu carrinho e tente novamente.';
+    case 'PIX_PAYER_EMAIL_REQUIRED':
+      return 'Informe um e-mail válido para receber o pagamento via Pix.';
+    case 'PIX_PAYMENT_CREATION_FAILED':
+    case 'PIX_PAYMENT_DATA_MISSING':
+      return 'Não foi possível gerar o Pix agora. Tente novamente em instantes.';
+    case 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD':
+      return 'Seu pedido mudou durante a confirmação. Revise os itens e tente novamente.';
+    case 'ORDER_CREATION_FAILED':
+    case 'INVALID_ORDER_RESPONSE':
+    case 'UNEXPECTED_API_ERROR':
+    case 'MISSING_MERCADO_PAGO_ACCESS_TOKEN':
+    case 'IDEMPOTENCY_RESPONSE_SYNC_FAILED':
+      return 'Não foi possível concluir seu pedido agora. Tente novamente em instantes.';
+    default:
+      return fallback && isFriendlyPublicMessage(fallback)
+        ? fallback
+        : 'Não foi possível concluir sua solicitação agora. Tente novamente em instantes.';
+  }
+}
+
+function isFriendlyPublicMessage(message: string) {
+  const normalized = message.toLowerCase();
+  const blockedTerms = ['token', 'idempot', 'schema', 'rpc', 'supabase', 'payload', 'json', 'backend', 'webhook'];
+  return !blockedTerms.some((term) => normalized.includes(term));
 }
 
 function isErrorResponseBody(value: unknown): value is ErrorResponseBody {

@@ -106,7 +106,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
 
               <div className="hero-reveal hero-reveal-delay mt-8 max-w-4xl">
                 <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/58">
-                  Cardapio da casa
+                  Cardápio da casa
                 </span>
                 <h1
                   className="max-w-[12ch] text-[clamp(4rem,9vw,8rem)] font-semibold leading-[0.92] tracking-[-0.055em]"
@@ -115,8 +115,8 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
                   {restaurant.name}
                 </h1>
                 <p className="mt-7 max-w-2xl text-[clamp(1.05rem,1.8vw,1.28rem)] leading-8 text-white/80 sm:leading-9">
-                  Escolha seus pratos, monte o carrinho e finalize o pedido no checkout real da loja. O backend canonico
-                  confirma os valores finais antes da criacao do pedido.
+                  Escolha seus pratos, monte o carrinho e finalize o pedido em poucos passos. Antes da confirmação,
+                  revisamos todas as informações para que você siga com tranquilidade.
                 </p>
               </div>
 
@@ -138,7 +138,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
               </div>
 
               <div className="hero-reveal hero-reveal-delay mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/14 pt-6 text-sm text-white/72">
-                <span>{categories.length} categorias com produtos publicados</span>
+                <span>{categories.length} categorias disponíveis</span>
                 <span className="hidden h-1.5 w-1.5 rounded-full bg-white/28 sm:block" />
                 <span>{itemCount} itens no carrinho atual</span>
               </div>
@@ -146,15 +146,15 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
 
             <div className="hidden gap-6 text-white/84 lg:grid">
               <div className="border-t border-white/14 pt-5">
-                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Visual final</p>
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Receitas da casa</p>
                 <p className="mt-3 text-lg leading-8 text-white/82">
-                  A mesma linguagem do site real agora veste o storefront canonico publicado.
+                  Pratos preparados para o dia, com apresentação caprichada e sabor de comida feita com carinho.
                 </p>
               </div>
               <div className="border-t border-white/14 pt-5">
-                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Checkout real</p>
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Pedido simples</p>
                 <p className="mt-3 text-lg leading-8 text-white/82">
-                  Carrinho e checkout seguem conectados ao fluxo de pedido existente dentro do app `web/`.
+                  Adicione ao carrinho, revise com calma e siga para a finalização sem complicação.
                 </p>
               </div>
             </div>
@@ -168,21 +168,21 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
           {categories.length === 0 ? (
             <div className="soft-card rounded-[2rem] p-8 text-center">
               <h2 className="text-[2.4rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
-                Cardapio em atualizacao.
+                Cardápio em atualização.
               </h2>
               <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-                Esta loja ja esta publicada, mas ainda nao possui categorias com produtos disponiveis para compra.
+                Estamos preparando novidades para você. Volte em instantes para conferir os pratos disponíveis.
               </p>
             </div>
           ) : (
             <div className="space-y-10">
               <div className="section-intro lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.7fr)] lg:items-end lg:justify-between">
                 <div>
-                  <span className="section-kicker">Cardapio em destaque</span>
-                  <h2 className="section-title mt-4">Pratos com cara de favoritos instantaneos.</h2>
+                  <span className="section-kicker">Cardápio em destaque</span>
+                  <h2 className="section-title mt-4">Pratos com cara de favoritos instantâneos.</h2>
                 </div>
                 <p className="section-copy lg:justify-self-end">
-                  Filtre por categoria, escolha os pratos disponiveis e monte o pedido no carrinho real da loja.
+                  Explore as categorias, escolha seus pratos preferidos e monte seu pedido com calma.
                 </p>
               </div>
 
@@ -217,7 +217,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
                                 <img src={product.image_url} alt={product.name} className="food-image" />
                               ) : (
                                 <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,_#fed7aa,_#ffedd5)] text-sm font-semibold text-orange-700">
-                                  Sem foto
+                                  Imagem em breve
                                 </div>
                               )}
                             </div>
@@ -240,7 +240,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
                                   </div>
                                 </div>
                                 <p className="mt-4 text-sm leading-7" style={{ color: 'var(--ink-muted)' }}>
-                                  {product.description?.trim() || 'Produto disponivel para pedido online.'}
+                                  {product.description?.trim() || 'Prato disponível para pedido online.'}
                                 </p>
                               </div>
 
@@ -379,7 +379,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
                 </span>
               </div>
               <p className="mt-2 text-xs" style={{ color: 'var(--ink-muted)' }}>
-                Taxa, desconto e valor final sao recalculados pelo backend no checkout.
+                Taxa de entrega, descontos e valor final são confirmados antes da conclusão do pedido.
               </p>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
                 <button
@@ -397,7 +397,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
                     cartItems.length === 0 ? 'pointer-events-none opacity-50' : ''
                   }`}
                 >
-                  Ir para checkout
+                  Continuar para o checkout
                 </Link>
               </div>
             </div>

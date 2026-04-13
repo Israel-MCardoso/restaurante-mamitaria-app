@@ -43,7 +43,7 @@ export function ensureApiError(
   }
 
   if (error instanceof SyntaxError) {
-    return new ApiError(400, 'INVALID_JSON_BODY', 'Request body must be valid JSON.');
+    return new ApiError(400, 'INVALID_JSON_BODY', 'A solicitação enviada não pôde ser processada.');
   }
 
   return new ApiError(fallback.status, fallback.code, fallback.message, fallback.field);
@@ -56,7 +56,7 @@ export async function parseJsonBody<T>(request: Request): Promise<T> {
     throw ensureApiError(error, {
       status: 400,
       code: 'INVALID_JSON_BODY',
-      message: 'Request body must be valid JSON.',
+      message: 'A solicitação enviada não pôde ser processada.',
     });
   }
 }

@@ -6,7 +6,7 @@ export function BrandLogo({ compact = false }: BrandLogoProps) {
   const iconSize = compact ? 34 : 52;
 
   return (
-    <div className="flex items-center gap-2.5 sm:gap-4" aria-label="Familia Mineira">
+    <div className="flex items-center gap-2.5 sm:gap-4" aria-label="Família Mineira">
       <svg
         width={iconSize}
         height={iconSize}
@@ -53,7 +53,7 @@ export function BrandLogo({ compact = false }: BrandLogoProps) {
           className={`${compact ? 'text-[1.45rem] sm:text-[2rem]' : 'text-[2.2rem] sm:text-[2.5rem]'} tracking-[-0.06em]`}
           style={{ fontFamily: 'var(--font-display)', color: '#88A35B', lineHeight: 0.82 }}
         >
-          Familia
+          Família
         </div>
         <div
           className={`${compact ? 'text-[1.08rem] sm:text-[1.5rem]' : 'text-[1.6rem] sm:text-[1.85rem]'} tracking-[-0.055em]`}
@@ -79,4 +79,3 @@ export function BrandLogo({ compact = false }: BrandLogoProps) {
     </div>
   );
 }
-

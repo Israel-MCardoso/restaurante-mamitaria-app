@@ -8,10 +8,10 @@ import { BrandLogo } from '@/components/site/BrandLogo';
 
 const PHONE_DISPLAY = '+55 15 99144-2274';
 const WHATSAPP_NUMBER = '5515991442274';
-const ADDRESS = 'R. Gustavo Teixeira, 42 - Vila Independencia';
+const ADDRESS = 'R. Gustavo Teixeira, 42 - Vila Independência';
 const MAPS_URL = 'https://maps.app.goo.gl/B2EL1dMpC4auAbj96';
 
-function getWhatsAppUrl(message = 'Ola! Gostaria de fazer um pedido.') {
+function getWhatsAppUrl(message = 'Olá! Gostaria de fazer um pedido.') {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
@@ -37,21 +37,21 @@ export function SiteHeader({ fallbackMenuHref = '/checkout' }: { fallbackMenuHre
               className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
               style={{ color: 'rgba(53, 39, 34, 0.74)' }}
             >
-              Cardapio
+              Cardápio
             </Link>
             <Link
               href="/#sobre"
               className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
               style={{ color: 'rgba(53, 39, 34, 0.74)' }}
             >
-              Sobre nos
+              Sobre nós
             </Link>
             <Link
               href="/#experiencia"
               className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
               style={{ color: 'rgba(53, 39, 34, 0.74)' }}
             >
-              Experiencia
+              Experiência
             </Link>
           </nav>
 
@@ -101,7 +101,7 @@ export function SiteFooter() {
       <div className="content-shell">
         <div className="grid gap-12 md:grid-cols-[1.2fr_0.8fr_0.9fr]">
           <div className="max-w-md">
-            <span className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-white/42">Sabor Mineiro</span>
+            <span className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-white/42">Família Mineira</span>
             <h3
               className="mt-4 text-[2.8rem] leading-none tracking-[-0.05em]"
               style={{ fontFamily: 'var(--font-display)' }}
@@ -109,22 +109,22 @@ export function SiteFooter() {
               Comida com raiz, ritmo e calor de casa.
             </h3>
             <p className="mt-5 text-base leading-7 text-white/64">
-              Marmitas mineiras preparadas diariamente para quem quer almocar com qualidade, memoria afetiva e entrega
-              confiavel.
+              Marmitas mineiras preparadas diariamente para quem quer almoçar com qualidade, memória afetiva e entrega
+              confiável.
             </p>
           </div>
 
           <div>
-            <p className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/42">Navegacao</p>
+            <p className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/42">Navegação</p>
             <div className="mt-5 space-y-3 text-base text-white/72">
               <Link href="/" className="block transition-colors hover:text-[var(--gold)]">
-                Inicio
+                Início
               </Link>
               <Link href="/#sobre" className="block transition-colors hover:text-[var(--gold)]">
-                Sobre nos
+                Sobre nós
               </Link>
               <Link href="/#experiencia" className="block transition-colors hover:text-[var(--gold)]">
-                Experiencia
+                Experiência
               </Link>
             </div>
           </div>
@@ -142,7 +142,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-12 border-t pt-6 text-sm uppercase tracking-[0.2em] text-white/34" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-          © 2026 Sabor Mineiro. Todos os direitos reservados.
+          © 2026 Família Mineira. Todos os direitos reservados.
         </div>
       </div>
     </footer>

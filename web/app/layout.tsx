@@ -15,8 +15,8 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata = {
-  title: 'Meu Delivery',
-  description: 'Peça online agora mesmo!',
+  title: 'Família Mineira | Marmitaria e Doceria',
+  description: 'Peça online pratos caseiros preparados com sabor de comida feita em casa.',
 };
 
 export default function RootLayout({
@@ -28,9 +28,7 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={`${manrope.variable} ${cormorant.variable}`}>
         <StorefrontProvider>
-          <CartProvider>
-            {children}
-          </CartProvider>
+          <CartProvider>{children}</CartProvider>
         </StorefrontProvider>
       </body>
     </html>

@@ -18,7 +18,7 @@ interface OrderTrackingViewProps {
 }
 
 const statusMap: Record<CanonicalOrder['status'], string> = {
-  pending: 'Aguardando confirmacao',
+  pending: 'Aguardando confirmação',
   confirmed: 'Pedido confirmado',
   preparing: 'Na cozinha',
   out_for_delivery: 'Saiu para entrega',
@@ -32,6 +32,12 @@ const paymentStatusMap: Record<CanonicalOrder['payment_status'], string> = {
   paid: 'Pagamento aprovado',
   failed: 'Pagamento falhou',
   expired: 'Pagamento expirado',
+};
+
+const paymentMethodMap: Record<CanonicalOrder['payment_method'], string> = {
+  pix: 'Pix',
+  cash: 'Dinheiro',
+  card: 'Cartão',
 };
 
 export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
@@ -88,7 +94,7 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
   useEffect(() => {
     if (!accessToken) {
-      setErrorMessage('Este pedido precisa do link original de acompanhamento para ser aberto com seguranca.');
+      setErrorMessage('Abra este pedido pelo link que você recebeu para acompanhar as atualizações.');
       return;
     }
 
@@ -118,12 +124,14 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
           return;
         }
 
-        console.error('Failed to load canonical order', error);
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Failed to load order', error);
+        }
 
         if (error instanceof PublicOrderApiError) {
           setErrorMessage(error.message);
         } else {
-          setErrorMessage('Nao foi possivel atualizar o status do pedido agora.');
+          setErrorMessage('Não foi possível atualizar o pedido agora. Tente novamente em instantes.');
         }
 
         pollTimeoutRef.current = setTimeout(loadOrder, 10000);
@@ -161,10 +169,12 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
     try {
       await navigator.clipboard.writeText(pixCode);
-      setCopyFeedback('Codigo Pix copiado.');
+      setCopyFeedback('Código Pix copiado.');
     } catch (error) {
-      console.error('Failed to copy Pix code', error);
-      setCopyFeedback('Nao foi possivel copiar o codigo Pix.');
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Failed to copy Pix code', error);
+      }
+      setCopyFeedback('Não foi possível copiar o código Pix.');
     }
   };
 
@@ -197,7 +207,7 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
               Pedido recebido!
             </h1>
             <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-              Seu pedido #{order.order_number} ja esta sendo acompanhado em tempo real.
+              Seu pedido #{order.order_number} já foi registrado e você pode acompanhar cada etapa por aqui.
             </p>
           </div>
 
@@ -245,7 +255,7 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
               <div className="mt-5 grid gap-3 text-sm">
                 <div className="flex items-center justify-between gap-4">
                   <p style={{ color: 'var(--ink-muted)' }}>Forma de pagamento</p>
-                  <p className="font-semibold uppercase">{order.payment_method}</p>
+                  <p className="font-semibold">{paymentMethodMap[order.payment_method]}</p>
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <p style={{ color: 'var(--ink-muted)' }}>Status do pagamento</p>
@@ -254,7 +264,7 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
                 {order.payment_method === 'pix' && order.payment_data?.copy_paste_code ? (
                   <div className="pt-2">
-                    <p className="mb-3 text-sm" style={{ color: 'var(--ink-muted)' }}>Use o codigo Pix abaixo para concluir o pagamento.</p>
+                    <p className="mb-3 text-sm" style={{ color: 'var(--ink-muted)' }}>Use o código Pix abaixo para concluir o pagamento.</p>
                     {order.payment_data.qr_code_base64 ? (
                       <div className="mb-3 flex justify-center rounded-lg border bg-white p-3" style={{ borderColor: 'var(--line)' }}>
                         <img
@@ -269,7 +279,7 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
                     </div>
                     <button type="button" onClick={handleCopyPixCode} className="premium-button mt-3 px-4 py-3 sm:w-auto">
                       <Copy className="h-4 w-4" />
-                      Copiar codigo Pix
+                      Copiar código Pix
                     </button>
                     {copyFeedback ? <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>{copyFeedback}</p> : null}
                   </div>

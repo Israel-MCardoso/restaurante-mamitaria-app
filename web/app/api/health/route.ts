@@ -162,9 +162,7 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
-        environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'unknown',
-        checks,
-        db: null,
+        message: 'Serviço temporariamente indisponível.',
         timestamp: new Date().toISOString(),
       },
       {
@@ -182,9 +180,7 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: db.dbSchemaReady,
-        environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'unknown',
-        checks,
-        db,
+        message: db.dbSchemaReady ? 'Serviço disponível.' : 'Serviço temporariamente indisponível.',
         timestamp: new Date().toISOString(),
       },
       {
@@ -198,13 +194,7 @@ export async function GET() {
     return NextResponse.json(
       {
         ok: false,
-        environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'unknown',
-        checks,
-        db: {
-          dbSchemaReady: false,
-          schema: null,
-          state: classifySupabaseError(error instanceof Error ? error.message : null),
-        },
+        message: 'Serviço temporariamente indisponível.',
         timestamp: new Date().toISOString(),
       },
       {

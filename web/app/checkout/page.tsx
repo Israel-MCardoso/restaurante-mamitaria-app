@@ -41,7 +41,7 @@ export default function CheckoutPage() {
     }
 
     if (!restaurant?.id) {
-      setFeedbackMessage('Abra a loja novamente antes de finalizar o pedido.');
+      setFeedbackMessage('Volte ao cardápio e escolha seus itens novamente antes de finalizar.');
       return;
     }
 
@@ -84,7 +84,9 @@ export default function CheckoutPage() {
       clearCart();
       router.push(`/order-success/${result.order.order_id}`);
     } catch (error) {
-      console.error('Failed to create canonical order', error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Failed to create order', error);
+      }
 
       if (error instanceof PublicOrderApiError) {
         setFeedbackMessage(error.message);
@@ -93,7 +95,7 @@ export default function CheckoutPage() {
           clearPendingOrderAttempt();
         }
       } else {
-        setFeedbackMessage('Erro ao processar pedido. Se a internet oscilou, tente novamente para retomar a mesma tentativa.');
+        setFeedbackMessage('Não foi possível concluir seu pedido agora. Confira sua conexão e tente novamente em instantes.');
       }
     } finally {
       setIsSubmitting(false);
@@ -112,16 +114,16 @@ export default function CheckoutPage() {
               style={{ color: 'rgba(53, 39, 34, 0.68)' }}
             >
               <ArrowLeft className="h-4 w-4" />
-              Voltar ao cardapio
+              Voltar ao cardápio
             </Link>
 
             {items.length === 0 ? (
               <div className="soft-card mt-8 rounded-[2rem] p-10 text-center">
                 <h1 className="text-[3rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
-                  Seu carrinho esta vazio.
+                  Seu carrinho está vazio.
                 </h1>
                 <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-                  Adicione produtos na loja antes de seguir para o checkout.
+                  Adicione alguns itens antes de seguir para a finalização do pedido.
                 </p>
                 {restaurant?.slug ? (
                   <Link href={`/${restaurant.slug}`} className="premium-button mt-6 px-8 py-4 sm:w-auto">
@@ -140,13 +142,13 @@ export default function CheckoutPage() {
                     Dados para entrega.
                   </h1>
                   <p className="mt-5 max-w-2xl text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-                    Confirme seus dados e finalize o pedido usando o backend canonico ja publicado.
+                    Preencha seus dados para confirmar a entrega e concluir seu pedido com segurança.
                   </p>
 
                   <div className="mt-7 grid gap-3 sm:grid-cols-3">
                     {[
-                      { icon: ClipboardList, text: 'Pedido confirmado na hora' },
-                      { icon: ShieldCheck, text: 'Valores validados no backend' },
+                      { icon: ClipboardList, text: 'Pedido enviado com praticidade' },
+                      { icon: ShieldCheck, text: 'Valores confirmados antes da finalização' },
                       { icon: ShoppingBag, text: `${itemCount} itens no carrinho` },
                     ].map((item) => {
                       const Icon = item.icon;
@@ -180,7 +182,7 @@ export default function CheckoutPage() {
                     </div>
 
                     <Field
-                      label="E-mail para Pix"
+                        label="E-mail para receber o Pix"
                       value={formData.email}
                       onChange={(value) => setFormData((current) => ({ ...current, email: value }))}
                       type="email"
@@ -195,7 +197,7 @@ export default function CheckoutPage() {
                         autoComplete="address-line1"
                       />
                       <Field
-                        label="Numero"
+                        label="Número"
                         value={formData.number}
                         onChange={(value) => setFormData((current) => ({ ...current, number: value }))}
                         autoComplete="address-line2"
@@ -215,9 +217,9 @@ export default function CheckoutPage() {
                       </span>
                       <div className="grid gap-3 sm:grid-cols-3">
                         {[
-                          { value: 'pix', title: 'Pix', copy: 'QR Code e copia e cola apos criar o pedido.' },
+                          { value: 'pix', title: 'Pix', copy: 'Receba o QR Code e o código para pagar logo após o pedido.' },
                           { value: 'cash', title: 'Dinheiro', copy: 'Pagamento na entrega.' },
-                          { value: 'card', title: 'Cartao', copy: 'Maquininha na entrega.' },
+                          { value: 'card', title: 'Cartão', copy: 'Pagamento na entrega.' },
                         ].map((option) => (
                           <button
                             key={option.value}
@@ -255,7 +257,7 @@ export default function CheckoutPage() {
 
                     <button type="submit" className="premium-button px-8 py-4 sm:w-auto" disabled={isSubmitting || items.length === 0}>
                       {isSubmitting ? <LoaderCircle className="h-5 w-5 animate-spin" /> : <ClipboardList className="h-5 w-5" />}
-                      {isSubmitting ? 'Criando pedido...' : 'Finalizar pedido'}
+                      {isSubmitting ? 'Confirmando pedido...' : 'Finalizar pedido'}
                     </button>
                   </form>
                 </div>
@@ -285,17 +287,17 @@ export default function CheckoutPage() {
 
                   <div className="mt-6 grid gap-3 text-sm">
                     <div className="flex justify-between">
-                      <span style={{ color: 'var(--ink-muted)' }}>Subtotal estimado</span>
+                      <span style={{ color: 'var(--ink-muted)' }}>Subtotal dos itens</span>
                       <strong>{formatMoney(total)}</strong>
                     </div>
                     <div className="flex justify-between border-t pt-4 text-lg" style={{ borderColor: 'var(--line)', color: 'var(--ink-strong)' }}>
                       <span>Total final</span>
-                      <strong>Confirmado pelo backend</strong>
+                      <strong>Calculado na confirmação</strong>
                     </div>
                   </div>
 
                   <div className="mt-5 rounded-[1.25rem] border p-4 text-sm leading-6" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)', color: 'var(--ink-muted)' }}>
-                    O backend recalcula subtotal, taxa e descontos antes de criar o pedido.
+                    Taxa de entrega, descontos e valor final são confirmados antes do seu pedido ser concluído.
                   </div>
                 </aside>
               </div>
