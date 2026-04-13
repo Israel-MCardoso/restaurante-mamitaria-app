@@ -61,6 +61,10 @@ function serializeOrderError(error: unknown) {
       details.cause = error.cause ?? null;
     }
 
+     if ('details' in error) {
+      details.details = (error as { details?: unknown }).details ?? null;
+    }
+
     return details;
   }
 

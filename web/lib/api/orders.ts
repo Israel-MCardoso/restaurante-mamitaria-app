@@ -256,7 +256,13 @@ function mapSupabaseError(message: string) {
     return new ApiError(knownError.status, knownError.code, humanizeErrorCode(knownError.code), knownError.field);
   }
 
-  return new ApiError(500, 'ORDER_CREATION_FAILED', 'Unable to create order safely at this time.');
+  return new ApiError(
+    500,
+    'ORDER_CREATION_FAILED',
+    'Unable to create order safely at this time.',
+    undefined,
+    { supabaseMessage: message },
+  );
 }
 
 function humanizeErrorCode(code: string) {
