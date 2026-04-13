@@ -109,8 +109,9 @@ async function getRestaurant(slug: string) {
   };
 }
 
-export default async function RestaurantPage({ params }: { params: { slug: string } }) {
-  const restaurant = await getRestaurant(params.slug);
+export default async function RestaurantPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const restaurant = await getRestaurant(slug);
 
   if (!restaurant) {
     notFound();
