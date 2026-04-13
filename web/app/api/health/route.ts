@@ -68,10 +68,18 @@ async function runSchemaChecks() {
       ? crypto.randomUUID()
       : '00000000-0000-4000-8000-000000000001';
 
-  const [ordersAccessTokenResult, orderItemsProductNameResult, createOrderRpcResult, getOrderRpcResult, updatePaymentRpcResult] =
+  const [
+    ordersAccessTokenResult,
+    orderItemsProductNameResult,
+    orderStatusHistoryResult,
+    createOrderRpcResult,
+    getOrderRpcResult,
+    updatePaymentRpcResult,
+  ] =
     await Promise.all([
       supabase.from('orders').select('id, access_token').limit(1),
       supabase.from('order_items').select('id, product_name').limit(1),
+      supabase.from('order_status_history').select('id, order_id, status').limit(1),
       supabase.rpc('create_canonical_order', {
         payload: null,
         request_idempotency_key: `health-${orderProbeId}`,
@@ -95,6 +103,9 @@ async function runSchemaChecks() {
     orderItemsProductNameColumn: orderItemsProductNameResult.error
       ? fail(classifySupabaseError(orderItemsProductNameResult.error.message))
       : ok('ORDER_ITEMS_PRODUCT_NAME_READY'),
+    orderStatusHistoryTable: orderStatusHistoryResult.error
+      ? fail(classifySupabaseError(orderStatusHistoryResult.error.message))
+      : ok('ORDER_STATUS_HISTORY_READY'),
     createCanonicalOrderRpc: createOrderRpcResult.error
       ? (() => {
           const state = classifySupabaseError(createOrderRpcResult.error.message);
