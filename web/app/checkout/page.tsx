@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { CreateOrderRequest } from '@/lib/contracts';
@@ -15,7 +16,7 @@ import {
 } from '@/lib/orders/public';
 
 export default function CheckoutPage() {
-  const { items, clearCart } = useCart();
+  const { items, clearCart, total, itemCount } = useCart();
   const { restaurant } = useStorefront();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,102 +99,168 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Finalizar Pedido</h1>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <section className="bg-white p-6 rounded-lg shadow-sm border">
-          <h2 className="text-lg font-semibold mb-4">Dados Pessoais</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              className="border p-2 rounded"
-              placeholder="Nome completo"
-              required
-              value={formData.name}
-              onChange={(event) => setFormData({ ...formData, name: event.target.value })}
-            />
-            <input
-              className="border p-2 rounded"
-              placeholder="WhatsApp/Telefone"
-              required
-              value={formData.phone}
-              onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
-            />
-            <input
-              className="border p-2 rounded md:col-span-2"
-              placeholder="E-mail para pagamento Pix"
-              required={formData.paymentMethod === 'pix'}
-              type="email"
-              value={formData.email}
-              onChange={(event) => setFormData({ ...formData, email: event.target.value })}
-            />
-          </div>
-        </section>
-
-        <section className="bg-white p-6 rounded-lg shadow-sm border">
-          <h2 className="text-lg font-semibold mb-4">Endereço de Entrega</h2>
-          <div className="space-y-4">
-            <input
-              className="w-full border p-2 rounded"
-              placeholder="Rua / Logradouro"
-              required
-              value={formData.street}
-              onChange={(event) => setFormData({ ...formData, street: event.target.value })}
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <input
-                className="border p-2 rounded"
-                placeholder="Número"
-                required
-                value={formData.number}
-                onChange={(event) => setFormData({ ...formData, number: event.target.value })}
-              />
-              <input
-                className="border p-2 rounded"
-                placeholder="Cidade"
-                required
-                value={formData.city}
-                onChange={(event) => setFormData({ ...formData, city: event.target.value })}
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-white p-6 rounded-lg shadow-sm border">
-          <h2 className="text-lg font-semibold mb-4">Pagamento</h2>
-          <select
-            className="w-full border p-2 rounded"
-            value={formData.paymentMethod}
-            onChange={(event) => setFormData({ ...formData, paymentMethod: event.target.value })}
-          >
-            <option value="pix">Pix</option>
-            <option value="cash">Dinheiro na entrega</option>
-            <option value="card">Cartão na entrega</option>
-          </select>
-        </section>
-
-        {feedbackMessage ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {feedbackMessage}
-          </div>
-        ) : null}
-
-        <div className="bg-gray-100 p-4 rounded-lg flex justify-between items-center">
-          <div>
-            <p className="text-gray-600">Total final confirmado após o envio</p>
-            <p className="text-sm text-gray-500">
-              O backend recalcula subtotal, taxa e descontos antes de criar o pedido.
-            </p>
-          </div>
-          <button
-            type="submit"
-            disabled={isSubmitting || items.length === 0}
-            className="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 disabled:opacity-50"
-          >
-            {isSubmitting ? 'Processando...' : 'Confirmar Pedido'}
-          </button>
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mb-8 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Checkout</p>
+          <h1 className="mt-2 text-3xl font-bold text-stone-950">Finalizar Pedido</h1>
+          <p className="mt-2 text-sm text-stone-600">
+            Revise seus itens e confirme o envio com os dados de entrega.
+          </p>
         </div>
-      </form>
+        {restaurant?.slug ? (
+          <Link href={`/${restaurant.slug}`} className="text-sm font-medium text-stone-600 underline-offset-4 hover:underline">
+            Voltar para a loja
+          </Link>
+        ) : null}
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-stone-300 bg-white p-10 text-center shadow-sm">
+          <h2 className="text-xl font-semibold text-stone-900">Seu carrinho está vazio</h2>
+          <p className="mt-3 text-sm text-stone-600">
+            Adicione produtos na loja antes de seguir para o checkout.
+          </p>
+          {restaurant?.slug ? (
+            <Link
+              href={`/${restaurant.slug}`}
+              className="mt-6 inline-flex rounded-2xl bg-stone-950 px-5 py-3 text-sm font-semibold text-white hover:bg-stone-800"
+            >
+              Escolher produtos
+            </Link>
+          ) : null}
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <section className="rounded-lg border bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold">Dados Pessoais</h2>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <input
+                  className="rounded border p-2"
+                  placeholder="Nome completo"
+                  required
+                  value={formData.name}
+                  onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                />
+                <input
+                  className="rounded border p-2"
+                  placeholder="WhatsApp/Telefone"
+                  required
+                  value={formData.phone}
+                  onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                />
+                <input
+                  className="rounded border p-2 md:col-span-2"
+                  placeholder="E-mail para pagamento Pix"
+                  required={formData.paymentMethod === 'pix'}
+                  type="email"
+                  value={formData.email}
+                  onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                />
+              </div>
+            </section>
+
+            <section className="rounded-lg border bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold">Endereço de Entrega</h2>
+              <div className="space-y-4">
+                <input
+                  className="w-full rounded border p-2"
+                  placeholder="Rua / Logradouro"
+                  required
+                  value={formData.street}
+                  onChange={(event) => setFormData({ ...formData, street: event.target.value })}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <input
+                    className="rounded border p-2"
+                    placeholder="Número"
+                    required
+                    value={formData.number}
+                    onChange={(event) => setFormData({ ...formData, number: event.target.value })}
+                  />
+                  <input
+                    className="rounded border p-2"
+                    placeholder="Cidade"
+                    required
+                    value={formData.city}
+                    onChange={(event) => setFormData({ ...formData, city: event.target.value })}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-lg border bg-white p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold">Pagamento</h2>
+              <select
+                className="w-full rounded border p-2"
+                value={formData.paymentMethod}
+                onChange={(event) => setFormData({ ...formData, paymentMethod: event.target.value })}
+              >
+                <option value="pix">Pix</option>
+                <option value="cash">Dinheiro na entrega</option>
+                <option value="card">Cartão na entrega</option>
+              </select>
+            </section>
+
+            {feedbackMessage ? (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {feedbackMessage}
+              </div>
+            ) : null}
+
+            <div className="flex items-center justify-between rounded-lg bg-gray-100 p-4">
+              <div>
+                <p className="text-gray-600">Total final confirmado após o envio</p>
+                <p className="text-sm text-gray-500">
+                  O backend recalcula subtotal, taxa e descontos antes de criar o pedido.
+                </p>
+              </div>
+              <button
+                type="submit"
+                disabled={isSubmitting || items.length === 0}
+                className="rounded-lg bg-green-600 px-8 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {isSubmitting ? 'Processando...' : 'Confirmar Pedido'}
+              </button>
+            </div>
+          </form>
+
+          <aside className="h-fit rounded-3xl border border-stone-200 bg-white p-6 shadow-sm lg:sticky lg:top-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-orange-600">Resumo</p>
+            <h2 className="mt-2 text-2xl font-semibold text-stone-900">Seu carrinho</h2>
+            <div className="mt-6 space-y-4">
+              {items.map((item) => (
+                <div key={item.id} className="flex items-start justify-between gap-3 border-b border-stone-100 pb-4">
+                  <div>
+                    <p className="font-medium text-stone-900">{item.name}</p>
+                    <p className="text-sm text-stone-500">{item.quantity}x item</p>
+                  </div>
+                  <p className="text-sm font-semibold text-stone-900">
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.price * item.quantity)}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-6 space-y-3 text-sm">
+              <div className="flex items-center justify-between text-stone-600">
+                <span>Itens</span>
+                <span>{itemCount}</span>
+              </div>
+              <div className="flex items-center justify-between text-stone-600">
+                <span>Subtotal estimado</span>
+                <span>
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(total)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between border-t border-stone-200 pt-3 text-base font-semibold text-stone-900">
+                <span>Total final</span>
+                <span>Confirmado pelo backend</span>
+              </div>
+            </div>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
