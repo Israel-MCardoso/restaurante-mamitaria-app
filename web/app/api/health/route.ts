@@ -50,6 +50,10 @@ function classifySupabaseError(message?: string | null) {
     return 'ORDERS_ACCESS_TOKEN_COLUMN_MISSING';
   }
 
+  if (normalized.includes('column notes does not exist')) {
+    return 'ORDERS_NOTES_COLUMN_MISSING';
+  }
+
   if (normalized.includes('column product_name does not exist')) {
     return 'ORDER_ITEMS_PRODUCT_NAME_COLUMN_MISSING';
   }
@@ -70,6 +74,7 @@ async function runSchemaChecks() {
 
   const [
     ordersAccessTokenResult,
+    ordersNotesResult,
     orderItemsProductNameResult,
     orderStatusHistoryResult,
     createOrderRpcResult,
@@ -78,6 +83,7 @@ async function runSchemaChecks() {
   ] =
     await Promise.all([
       supabase.from('orders').select('id, access_token').limit(1),
+      supabase.from('orders').select('id, notes').limit(1),
       supabase.from('order_items').select('id, product_name').limit(1),
       supabase.from('order_status_history').select('id, order_id, status').limit(1),
       supabase.rpc('create_canonical_order', {
@@ -100,6 +106,9 @@ async function runSchemaChecks() {
     ordersAccessTokenColumn: ordersAccessTokenResult.error
       ? fail(classifySupabaseError(ordersAccessTokenResult.error.message))
       : ok('ORDERS_ACCESS_TOKEN_READY'),
+    ordersNotesColumn: ordersNotesResult.error
+      ? fail(classifySupabaseError(ordersNotesResult.error.message))
+      : ok('ORDERS_NOTES_READY'),
     orderItemsProductNameColumn: orderItemsProductNameResult.error
       ? fail(classifySupabaseError(orderItemsProductNameResult.error.message))
       : ok('ORDER_ITEMS_PRODUCT_NAME_READY'),
