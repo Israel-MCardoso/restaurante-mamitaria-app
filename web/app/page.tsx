@@ -129,4 +129,7 @@ export default async function HomePage() {
         restaurantName={landingData.restaurantName}
         previewItems={landingData.previewItems}
       />
-      <SiteFooter storefrontHref={la
+      <SiteFooter storefrontHref={landingData.storefrontHref ?? '/'} />
+    </>
+  );
+}

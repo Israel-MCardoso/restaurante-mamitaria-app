@@ -260,4 +260,9 @@ export function AppFooter() {
   return (
     <footer className="border-t px-4 py-6 sm:px-6 lg:px-8" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.72)' }}>
       <div className="content-shell flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <p style={{ color: 'var(--ink-muted)' }}>Sabor Mineiro</p
+        <p style={{ color: 'var(--ink-muted)' }}>Sabor Mineiro</p>
+        <p style={{ color: 'var(--ink-muted)' }}>Atendimento: {PHONE_DISPLAY}</p>
+      </div>
+    </footer>
+  );
+}

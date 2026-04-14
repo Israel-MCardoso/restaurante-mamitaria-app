@@ -25,7 +25,22 @@
 }
 
 html {
+  font-size: 16px;
   scroll-behavior: smooth;
+}
+
+/**
+ * Base typography — mirrors @layer base in the original theme.css.
+ * Sets Cormorant Garamond as the default font for all heading elements.
+ * All headings in the components already have explicit fontFamily via
+ * style props or CSS classes (.section-title), so this acts as a safety
+ * net for any future heading that might miss an explicit override.
+ */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
 }
 
 body {
@@ -218,6 +233,17 @@ select {
 
 .hero-reveal-delay {
   animation-delay: 120ms;
+}
+
+/**
+ * Image wash overlay — present in original theme.css but missing here.
+ * Adds a subtle bottom-to-top dark gradient over images with .image-wash.
+ */
+.image-wash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(14, 9, 7, 0.02) 0%, rgba(14, 9, 7, 0.34) 100%);
 }
 
 .food-image-frame {
