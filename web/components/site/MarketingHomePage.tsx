@@ -172,12 +172,12 @@ export function MarketingHomePage({
                 <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/58">
                   Sabor Mineiro
                 </span>
-                <h1
+                <h2
                   className="max-w-[12ch] text-[clamp(4rem,9vw,8.4rem)] font-semibold leading-[0.92] tracking-[-0.055em]"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
                   Comida mineira com presença de almoço especial.
-                </h1>
+                </h2>
                 <p className="mt-7 max-w-2xl text-[clamp(1.05rem,1.8vw,1.32rem)] leading-8 text-white/80 sm:leading-9">
                   Marmitas preparadas diariamente com receitas tradicionais, ingredientes frescos e o cuidado de quem
                   trata cada pedido como visita esperada para o almoço.
@@ -444,7 +444,7 @@ export function MarketingHomePage({
 
                         <h3
                           className={`leading-none tracking-[-0.045em]${
-                            isFeatured ? ' mt-6 text-[3rem]' : ' mt-4 text-[2.15rem]'
+                            isFeatured ? ' mt-6 text-[3rem]' : ' text-[2.15rem]'
                           }`}
                           style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
                         >
@@ -702,3 +702,4 @@ export function MarketingHomePage({
     </main>
   );
 }
+     

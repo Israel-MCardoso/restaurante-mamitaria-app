@@ -171,7 +171,7 @@ export function AppHeader({
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({ storefrontHref = '/' }: { storefrontHref?: string }) {
   return (
     <footer
       className="relative z-10 border-t py-14"
@@ -196,8 +196,8 @@ export function SiteFooter() {
           <div>
             <p className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/42">Navegação</p>
             <div className="mt-5 space-y-3 text-base text-white/72">
-              <Link href="/" className="block transition-colors hover:text-[var(--gold)]">
-                Início
+              <Link href={storefrontHref} className="block transition-colors hover:text-[var(--gold)]">
+                Cardápio
               </Link>
               <Link href="/#sobre" className="block transition-colors hover:text-[var(--gold)]">
                 Sobre nós
@@ -212,7 +212,7 @@ export function SiteFooter() {
             <p className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/42">Contato</p>
             <div className="mt-5 space-y-4 text-white/72">
               <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 shrink-0" />
+                <Phone className="h-4 w-4" />
                 <span>{PHONE_DISPLAY}</span>
               </div>
               <a
@@ -232,7 +232,7 @@ export function SiteFooter() {
 
             <div className="mt-6 flex gap-3">
               <a
-                href="https://www.instagram.com/daianaxavier_marmitaria"
+                href="https://www.instagram.com/daianaxavier_marmitaria?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
                 target="_blank"
                 rel="noreferrer"
                 className="flex h-11 w-11 items-center justify-center rounded-full border transition-colors hover:border-[var(--gold)] hover:text-[var(--gold)]"
@@ -260,9 +260,4 @@ export function AppFooter() {
   return (
     <footer className="border-t px-4 py-6 sm:px-6 lg:px-8" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.72)' }}>
       <div className="content-shell flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
-        <p style={{ color: 'var(--ink-muted)' }}>Sabor Mineiro</p>
-        <p style={{ color: 'var(--ink-muted)' }}>Atendimento: {PHONE_DISPLAY}</p>
-      </div>
-    </footer>
-  );
-}
+        <p style={{ color: 'var(--ink-muted)' }}>Sabor Mineiro</p

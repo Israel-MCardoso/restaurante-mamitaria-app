@@ -122,7 +122,4 @@ export default async function RestaurantPage({ params }: { params: Promise<{ slu
     <>
       <StorefrontHeader storefrontHref={`/${restaurant.slug}`} />
       <StorefrontExperience restaurant={restaurant} categories={restaurant.categories} />
-      <SiteFooter />
-    </>
-  );
-}
+      <SiteFooter storefrontHref={`/
