@@ -87,7 +87,11 @@ select {
 
 .section-shell {
   position: relative;
-  padding-block: clamp(5rem, 9vw, 8.5rem);
+  padding-block: clamp(5.5rem, 10vw, 9rem);
+}
+
+.section-divider {
+  position: relative;
 }
 
 .section-divider::before {
@@ -101,6 +105,12 @@ select {
   background: linear-gradient(90deg, transparent, var(--line) 14%, var(--line) 86%, transparent);
 }
 
+.section-intro {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: clamp(3rem, 6vw, 5rem);
+}
+
 .section-kicker {
   font-size: 0.75rem;
   font-weight: 700;
@@ -110,16 +120,18 @@ select {
 }
 
 .section-title {
+  max-width: 14ch;
   margin: 0;
   color: var(--ink-strong);
   font-family: var(--font-display);
-  font-size: clamp(3rem, 5vw, 4.8rem);
+  font-size: clamp(3rem, 5vw, 4.6rem);
   font-weight: 600;
   line-height: 0.98;
   letter-spacing: -0.04em;
 }
 
 .section-copy {
+  max-width: 42rem;
   margin: 0;
   color: var(--ink-muted);
   font-size: clamp(1rem, 1.35vw, 1.2rem);
@@ -136,6 +148,7 @@ select {
   padding: 1.05rem 1.65rem;
   background: linear-gradient(135deg, #d7964f 0%, #ba7634 100%);
   color: white;
+  font-family: var(--font-body);
   font-size: 0.96rem;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -184,6 +197,15 @@ select {
   border: 1px solid var(--line);
   background: linear-gradient(180deg, rgba(255, 250, 244, 0.96) 0%, rgba(255, 248, 241, 0.78) 100%);
   box-shadow: 0 22px 48px rgba(92, 66, 53, 0.08);
+}
+
+.eyebrow-dot::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--gold);
+  box-shadow: 0 0 0 0.35rem rgba(200, 135, 63, 0.12);
 }
 
 .hero-orb {
@@ -259,5 +281,19 @@ select {
 
   50% {
     transform: translate3d(0, -18px, 0) scale(1.04);
+  }
+}
+
+@media (max-width: 767px) {
+  .section-title {
+    max-width: 12ch;
+  }
+
+  .section-copy {
+    line-height: 1.7;
+  }
+
+  .premium-button {
+    width: 100%;
   }
 }

@@ -1,5 +1,19 @@
 import Link from 'next/link';
-import { ArrowRight, ChefHat, Clock, Heart, Leaf, MapPin, MessageCircle, Phone, Star, Truck } from 'lucide-react';
+import {
+  ArrowRight,
+  ChefHat,
+  Clock,
+  Heart,
+  Leaf,
+  MapPin,
+  MessageCircle,
+  Phone,
+  ShoppingBag,
+  Star,
+  Truck,
+} from 'lucide-react';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PreviewItem = {
   id: string;
@@ -10,16 +24,28 @@ type PreviewItem = {
   categoryName: string | null;
 };
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const WHATSAPP_NUMBER = '5515991442274';
+const PHONE_DISPLAY = '+55 15 99144-2274';
+const ADDRESS = 'R. Gustavo Teixeira, 42 - Vila Independência';
+const MAPS_URL = 'https://maps.app.goo.gl/B2EL1dMpC4auAbj96';
+
 function getWhatsAppUrl(message = 'Olá! Gostaria de fazer um pedido.') {
-  return `https://wa.me/5515991442274?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
+
+// ─── Static data ──────────────────────────────────────────────────────────────
+
+const trustStats = [
+  { number: '2.500+', label: 'clientes satisfeitos', detail: 'Pedidos recorrentes em ritmo de almoço de confiança.' },
+  { number: '4,9', label: 'avaliação média', detail: 'Feedback constante sobre sabor, temperatura e atendimento.' },
+  { number: '30 min', label: 'entrega média', detail: 'Cobertura ágil para quem precisa comer bem sem perder tempo.' },
+];
 
 const benefits = [
   {
@@ -71,13 +97,7 @@ const testimonials = [
   },
 ];
 
-const trustStats = [
-  { number: '2.500+', label: 'clientes satisfeitos', detail: 'Pedidos recorrentes em ritmo de almoço de confiança.' },
-  { number: '4,9', label: 'avaliação média', detail: 'Feedback constante sobre sabor, temperatura e atendimento.' },
-  { number: '30 min', label: 'entrega média', detail: 'Cobertura ágil para quem precisa comer bem sem perder tempo.' },
-];
-
-const infoCards = [
+const infos = [
   {
     icon: Clock,
     title: 'Horário',
@@ -86,13 +106,15 @@ const infoCards = [
   {
     icon: Phone,
     title: 'Contato',
-    details: ['WhatsApp: +55 15 99144-2274', 'Pagamento via PIX ou dinheiro'],
+    details: [`WhatsApp: ${PHONE_DISPLAY}`, 'Pagamento via PIX ou dinheiro'],
   },
 ];
 
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function MarketingHomePage({
   storefrontHref,
-  restaurantName,
+  restaurantName: _restaurantName,
   previewItems,
 }: {
   storefrontHref: string | null;
@@ -100,10 +122,11 @@ export function MarketingHomePage({
   previewItems: PreviewItem[];
 }) {
   const primaryHref = storefrontHref ?? '/checkout';
-  const previewTitle = restaurantName ? `Favoritos de ${restaurantName}` : 'Favoritos da casa';
 
   return (
     <main className="page-shell">
+
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="relative flex min-h-screen items-end overflow-hidden pt-32">
         <div
           className="absolute inset-0"
@@ -121,8 +144,14 @@ export function MarketingHomePage({
               'linear-gradient(90deg, rgba(18, 12, 10, 0.86) 0%, rgba(18, 12, 10, 0.58) 44%, rgba(18, 12, 10, 0.34) 100%)',
           }}
         />
-        <div className="hero-orb absolute -left-10 top-40 h-48 w-48 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(200, 135, 63, 0.24)' }} />
-        <div className="hero-orb absolute bottom-24 right-12 h-64 w-64 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(111, 143, 114, 0.18)', animationDelay: '1.5s' }} />
+        <div
+          className="hero-orb absolute -left-10 top-40 h-48 w-48 rounded-full blur-3xl"
+          style={{ backgroundColor: 'rgba(200, 135, 63, 0.24)' }}
+        />
+        <div
+          className="hero-orb absolute bottom-24 right-12 h-64 w-64 rounded-full blur-3xl"
+          style={{ backgroundColor: 'rgba(111, 143, 114, 0.18)', animationDelay: '1.5s' }}
+        />
 
         <div className="content-shell relative z-10 w-full pb-14 sm:pb-18 lg:pb-24">
           <div className="grid items-end gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.34fr)] lg:gap-10">
@@ -140,7 +169,9 @@ export function MarketingHomePage({
               </div>
 
               <div className="hero-reveal hero-reveal-delay mt-8 max-w-4xl">
-                <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/58">Sabor Mineiro</span>
+                <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/58">
+                  Sabor Mineiro
+                </span>
                 <h1
                   className="max-w-[12ch] text-[clamp(4rem,9vw,8.4rem)] font-semibold leading-[0.92] tracking-[-0.055em]"
                   style={{ fontFamily: 'var(--font-display)' }}
@@ -148,8 +179,8 @@ export function MarketingHomePage({
                   Comida mineira com presença de almoço especial.
                 </h1>
                 <p className="mt-7 max-w-2xl text-[clamp(1.05rem,1.8vw,1.32rem)] leading-8 text-white/80 sm:leading-9">
-                  Marmitas preparadas diariamente com receitas tradicionais, ingredientes frescos e o cuidado de quem trata
-                  cada pedido como visita esperada para o almoço.
+                  Marmitas preparadas diariamente com receitas tradicionais, ingredientes frescos e o cuidado de quem
+                  trata cada pedido como visita esperada para o almoço.
                 </p>
               </div>
 
@@ -158,7 +189,6 @@ export function MarketingHomePage({
                   Fazer pedido
                   <ArrowRight className="h-4 w-4" />
                 </Link>
-
                 <a
                   href={getWhatsAppUrl()}
                   target="_blank"
@@ -185,14 +215,12 @@ export function MarketingHomePage({
                   Pratos montados em pequenos lotes para manter textura, aroma e temperatura até a entrega.
                 </p>
               </div>
-
               <div className="border-t border-white/14 pt-5">
                 <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Receita de casa</p>
                 <p className="mt-3 text-lg leading-8 text-white/82">
                   Temperos feitos do zero, sem atalhos industriais, com repertório de mesa mineira tradicional.
                 </p>
               </div>
-
               <div className="border-t border-white/14 pt-5">
                 <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Atendimento</p>
                 <p className="mt-3 text-lg leading-8 text-white/82">
@@ -210,6 +238,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
+      {/* ── Trust ─────────────────────────────────────────────────────────── */}
       <section className="section-shell section-divider" style={{ backgroundColor: 'var(--surface-dark)' }}>
         <div className="content-shell">
           <div className="grid gap-10 lg:grid-cols-[0.95fr_2fr] lg:gap-12">
@@ -234,7 +263,9 @@ export function MarketingHomePage({
                   >
                     {stat.number}
                   </div>
-                  <p className="mt-4 text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/52">{stat.label}</p>
+                  <p className="mt-4 text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/52">
+                    {stat.label}
+                  </p>
                   <p className="mt-4 max-w-xs text-base leading-7 text-white/72">{stat.detail}</p>
                 </div>
               ))}
@@ -243,6 +274,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
+      {/* ── Benefits ──────────────────────────────────────────────────────── */}
       <section className="section-shell">
         <div className="content-shell">
           <div className="section-intro lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.7fr)] lg:items-end lg:justify-between">
@@ -251,24 +283,26 @@ export function MarketingHomePage({
               <h2 className="section-title mt-4">Mais do que praticidade, uma refeição com presença.</h2>
             </div>
             <p className="section-copy lg:justify-self-end">
-              A proposta combina tradição mineira, agilidade urbana e um cuidado visual que faz a refeição chegar com cara
-              de almoço importante, mesmo nos dias mais corridos.
+              A proposta combina tradição mineira, agilidade urbana e um cuidado visual que faz a refeição chegar com
+              cara de almoço importante, mesmo nos dias mais corridos.
             </p>
           </div>
 
           <div className="grid gap-x-14 gap-y-1 lg:grid-cols-2">
             {benefits.map((benefit, index) => {
               const Icon = benefit.icon;
-
               return (
-                <article key={benefit.title} className="flex gap-6 border-t pb-7 pt-8" style={{ borderColor: 'var(--line)' }}>
+                <article
+                  key={benefit.title}
+                  className="flex gap-6 border-t pb-7 pt-8"
+                  style={{ borderColor: 'var(--line)' }}
+                >
                   <span
                     className="mt-1 text-[1.15rem] font-semibold tracking-[0.18em]"
                     style={{ color: 'rgba(106, 91, 83, 0.52)', fontFamily: 'var(--font-display)' }}
                   >
                     {String(index + 1).padStart(2, '0')}
                   </span>
-
                   <div className="flex-1">
                     <Icon className="h-5 w-5" style={{ color: 'var(--gold)', strokeWidth: 1.7 }} />
                     <h3
@@ -288,81 +322,177 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      <section id="pratos" className="section-shell section-divider overflow-hidden" style={{ backgroundColor: 'rgba(255, 255, 255, 0.55)' }}>
+      {/* ── Popular Dishes ────────────────────────────────────────────────── */}
+      <section
+        id="pratos"
+        className="section-shell section-divider overflow-hidden"
+        style={{ backgroundColor: 'rgba(255, 255, 255, 0.55)' }}
+      >
         <div
           className="absolute left-1/2 top-30 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl"
           style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }}
         />
-        <div className="content-shell relative z-10">
-          <div className="section-intro lg:grid-cols-[minmax(0,0.85fr)_minmax(0,0.75fr)] lg:items-end lg:justify-between">
+        <div className="content-shell">
+          {/* Section intro */}
+          <div className="section-intro lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.7fr)] lg:items-end lg:justify-between">
             <div>
-              <span className="section-kicker">Pratos populares</span>
-              <h2 className="section-title mt-4">{previewTitle}</h2>
+              <span className="section-kicker">Cardápio em destaque</span>
+              <h2 className="section-title mt-4">Pratos com cara de favoritos instantâneos.</h2>
             </div>
             <p className="section-copy lg:justify-self-end">
-              Esta é a única parte conectada ao catálogo real da operação. Ela antecipa alguns pratos da casa sem transformar
-              a landing em loja.
+              Uma curadoria de combinações que chegam bem montadas, apetitosas e fáceis de escolher quando o almoço
+              pede praticidade sem abrir mão de sabor.
             </p>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            {previewItems.length > 0 ? (
-              previewItems.map((item) => (
-                <article key={item.id} className="soft-card overflow-hidden rounded-[2rem]">
-                  <div className="food-image-frame h-72">
-                    <img
-                      src={item.imageUrl ?? 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80'}
-                      alt={item.name}
-                      className="food-image"
-                    />
-                  </div>
-                  <div className="p-6 sm:p-7">
-                    <span className="section-kicker">{item.categoryName ?? 'Seleção da casa'}</span>
-                    <h3
-                      className="mt-4 text-[2.3rem] leading-none tracking-[-0.05em]"
-                      style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
-                    >
-                      {item.name}
-                    </h3>
-                    <p className="mt-4 min-h-[84px] text-sm leading-7" style={{ color: 'var(--ink-muted)' }}>
-                      {item.description || 'Receita preparada com atenção ao ponto, ao sabor e à experiência de entrega.'}
-                    </p>
-                    <div className="mt-6 flex items-center justify-between border-t pt-5" style={{ borderColor: 'var(--line)' }}>
-                      <span className="text-sm uppercase tracking-[0.2em]" style={{ color: 'rgba(53, 39, 34, 0.54)' }}>
-                        A partir de
-                      </span>
-                      <strong className="text-xl" style={{ color: 'var(--brand)' }}>
-                        {formatCurrency(item.price)}
-                      </strong>
-                    </div>
-                  </div>
-                </article>
-              ))
-            ) : (
-              <article className="soft-card rounded-[2rem] p-8 lg:col-span-3">
-                <span className="section-kicker">Cardápio em atualização</span>
-                <h3
-                  className="mt-4 text-[2.4rem] leading-none tracking-[-0.05em]"
-                  style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
-                >
-                  O cardápio completo está a um clique.
-                </h3>
-                <p className="mt-5 max-w-2xl text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-                  Se os destaques ainda não estiverem carregados aqui, a loja funcional continua disponível normalmente.
-                </p>
-              </article>
-            )}
-          </div>
+          {/* Empty state */}
+          {previewItems.length === 0 ? (
+            <div className="soft-card rounded-[2rem] p-8">
+              <span className="section-kicker">Cardápio em atualização</span>
+              <h3
+                className="mt-4 text-[2.4rem] leading-none tracking-[-0.05em]"
+                style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+              >
+                Cardápio indisponível no momento.
+              </h3>
+              <p className="mt-4 max-w-2xl text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
+                A cozinha ainda está atualizando os pratos disponíveis para hoje. A loja funcional continua disponível
+                normalmente.
+              </p>
+            </div>
+          ) : (
+            /* Editorial 2-column grid — mirrors ProductGrid layout from the original */
+            <div className="grid gap-6 lg:grid-cols-2">
+              {previewItems.map((item, index) => {
+                const isFeatured = index === 0;
 
-          <div className="mt-10 flex justify-center">
-            <Link href={primaryHref} className="premium-button px-8 py-4 sm:w-auto">
-              Ver cardápio completo
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+                return (
+                  <article
+                    key={item.id}
+                    className={`soft-card overflow-hidden rounded-[2rem]${
+                      isFeatured ? ' lg:col-span-2 lg:grid lg:grid-cols-[1.12fr_0.88fr]' : ''
+                    }`}
+                  >
+                    {/* Image frame with price + category overlay */}
+                    <div
+                      className={`food-image-frame relative block w-full${
+                        isFeatured ? ' min-h-[500px]' : ' h-[360px]'
+                      }`}
+                    >
+                      <img
+                        src={
+                          item.imageUrl ??
+                          'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80'
+                        }
+                        alt={item.name}
+                        width={isFeatured ? 720 : 640}
+                        height={isFeatured ? 500 : 360}
+                        loading={index === 0 ? 'eager' : 'lazy'}
+                        decoding="async"
+                        className="food-image"
+                      />
+                      {/* Overlay: category badge + price */}
+                      <div className="absolute inset-x-0 bottom-0 z-[3] p-6 sm:p-7">
+                        <div className="flex flex-wrap items-end justify-between gap-3">
+                          <span
+                            className="inline-flex rounded-full px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.24em]"
+                            style={{
+                              backgroundColor: 'rgba(18, 12, 10, 0.46)',
+                              color: 'rgba(255,255,255,0.84)',
+                            }}
+                          >
+                            {isFeatured ? 'Assinatura da casa' : 'Prato do dia'}
+                          </span>
+                          <span
+                            className="rounded-full px-4 py-2 text-sm font-semibold"
+                            style={{
+                              backgroundColor: 'rgba(255, 248, 240, 0.16)',
+                              color: 'white',
+                              backdropFilter: 'blur(10px)',
+                            }}
+                          >
+                            {formatCurrency(item.price)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Content */}
+                    <div
+                      className={`flex flex-col justify-between${
+                        isFeatured ? ' p-8 sm:p-10 lg:p-12' : ' p-7 sm:p-8'
+                      }`}
+                    >
+                      <div>
+                        {isFeatured ? (
+                          <span
+                            className="inline-flex rounded-full px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em]"
+                            style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)', color: 'var(--brand)' }}
+                          >
+                            Mais pedido da casa
+                          </span>
+                        ) : null}
+
+                        {item.categoryName ? (
+                          <p
+                            className="mt-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em]"
+                            style={{ color: 'var(--brand)' }}
+                          >
+                            {item.categoryName}
+                          </p>
+                        ) : null}
+
+                        <h3
+                          className={`leading-none tracking-[-0.045em]${
+                            isFeatured ? ' mt-6 text-[3rem]' : ' mt-4 text-[2.15rem]'
+                          }`}
+                          style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
+                        >
+                          {item.name}
+                        </h3>
+                        <p
+                          className={`mt-4 max-w-xl${isFeatured ? ' text-[1.08rem] leading-8' : ' text-base leading-7'}`}
+                          style={{ color: 'var(--ink-muted)' }}
+                        >
+                          {item.description ||
+                            'Receita preparada com atenção ao ponto, ao sabor e à experiência de entrega.'}
+                        </p>
+                      </div>
+
+                      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                        <Link href={primaryHref} className="premium-button px-6 py-3 sm:w-auto">
+                          {isFeatured ? (
+                            <ShoppingBag className="h-4 w-4" />
+                          ) : (
+                            <ArrowRight className="h-4 w-4" />
+                          )}
+                          {isFeatured ? 'Ver cardápio completo' : 'Ver no cardápio'}
+                        </Link>
+                        <a
+                          href={getWhatsAppUrl(`Olá! Gostaria de pedir: ${item.name}`)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="premium-button premium-button--ghost px-6 py-3 sm:w-auto"
+                          style={{
+                            color: 'var(--brand)',
+                            borderColor: 'var(--line)',
+                            background: 'rgba(255,250,244,0.62)',
+                          }}
+                        >
+                          <MessageCircle className="h-4 w-4" />
+                          WhatsApp
+                        </a>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
         </div>
       </section>
 
+      {/* ── About ─────────────────────────────────────────────────────────── */}
       <section id="sobre" className="section-shell" style={{ backgroundColor: 'rgba(234, 217, 192, 0.42)' }}>
         <div className="content-shell">
           <div className="grid items-center gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
@@ -392,23 +522,27 @@ export function MarketingHomePage({
 
               <div className="mt-8 space-y-6 text-[1.05rem] leading-8" style={{ color: 'var(--ink-muted)' }}>
                 <p>
-                  <strong style={{ color: 'var(--brand)' }}>Daiana Xavier</strong> é empreendedora na área de gastronomia, mineira,
-                  mãe de quatro filhos e apaixonada por transformar comida em experiências afetivas.
+                  <strong style={{ color: 'var(--brand)' }}>Daiana Xavier</strong> é empreendedora na área de
+                  gastronomia, mineira, mãe de quatro filhos e apaixonada por transformar comida em experiências
+                  afetivas.
                 </p>
                 <p>
-                  Após recomeçar sua vida em Sorocaba, construiu uma trajetória sólida com base em dedicação, consistência e amor
-                  pelo que faz. Hoje, como CEO do Ateliê Daiana Xavier, leva diariamente o verdadeiro sabor da comida caseira para
-                  seus clientes.
+                  Após recomeçar sua vida em Sorocaba, construiu uma trajetória sólida com base em dedicação,
+                  consistência e amor pelo que faz. Hoje, como CEO do Ateliê Daiana Xavier, leva diariamente o
+                  verdadeiro sabor da comida caseira para seus clientes.
                 </p>
-                <p>Sua missão é simples: oferecer mais do que refeições, criar momentos que marcam.</p>
+                <p>Sua missão é simples: oferecer mais do que refeições — criar momentos que marcam.</p>
               </div>
 
               <div className="mt-10 border-t pt-6" style={{ borderColor: 'var(--line)' }}>
-                <p className="text-[0.74rem] font-semibold uppercase tracking-[0.26em]" style={{ color: 'rgba(106, 91, 83, 0.62)' }}>
+                <p
+                  className="text-[0.74rem] font-semibold uppercase tracking-[0.26em]"
+                  style={{ color: 'rgba(106, 91, 83, 0.62)' }}
+                >
                   Essência
                 </p>
                 <p className="mt-3 text-lg leading-8" style={{ color: 'var(--ink)' }}>
-                  “Mais do que refeições, experiências afetivas servidas com sabor de casa.”
+                  "Mais do que refeições, experiências afetivas servidas com sabor de casa."
                 </p>
               </div>
             </div>
@@ -416,16 +550,19 @@ export function MarketingHomePage({
         </div>
       </section>
 
+      {/* ── Testimonials ──────────────────────────────────────────────────── */}
       <section id="depoimentos" className="section-shell section-divider">
         <div className="content-shell">
           <div className="section-intro lg:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)] lg:items-end lg:justify-between">
             <div>
               <span className="section-kicker">Avaliações reais</span>
-              <h2 className="section-title mt-4">Confiança percebida no primeiro pedido e confirmada nos próximos.</h2>
+              <h2 className="section-title mt-4">
+                Confiança percebida no primeiro pedido e confirmada nos próximos.
+              </h2>
             </div>
             <p className="section-copy lg:justify-self-end">
-              Os depoimentos mostram um padrão que se repete: sabor consistente, entrega confiável e sensação de refeição feita
-              com mais cuidado do que o comum no delivery.
+              Os depoimentos mostram um padrão que se repete: sabor consistente, entrega confiável e sensação de
+              refeição feita com mais cuidado do que o comum no delivery.
             </p>
           </div>
 
@@ -442,7 +579,7 @@ export function MarketingHomePage({
                   className="mt-8 max-w-[32rem] text-[1.35rem] leading-9 tracking-[-0.015em]"
                   style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
                 >
-                  “{testimonial.text}”
+                  "{testimonial.text}"
                 </p>
 
                 <div className="mt-8 border-t pt-5" style={{ borderColor: 'var(--line)' }}>
@@ -459,6 +596,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
+      {/* ── Info ──────────────────────────────────────────────────────────── */}
       <section className="section-shell" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
         <div className="content-shell">
           <div className="section-intro">
@@ -467,22 +605,22 @@ export function MarketingHomePage({
           </div>
 
           <div className="grid gap-5 lg:grid-cols-[0.95fr_0.95fr_1.1fr]">
-            {infoCards.map((info) => {
+            {infos.map((info) => {
               const Icon = info.icon;
-
               return (
                 <article key={info.title} className="soft-card rounded-[2rem] p-8 sm:p-9">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }}>
+                  <div
+                    className="flex h-14 w-14 items-center justify-center rounded-full"
+                    style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }}
+                  >
                     <Icon className="h-6 w-6" style={{ color: 'var(--brand)', strokeWidth: 1.7 }} />
                   </div>
-
                   <h3
                     className="mt-8 text-[2rem] leading-none tracking-[-0.04em]"
                     style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
                   >
                     {info.title}
                   </h3>
-
                   <div className="mt-6 space-y-3 text-[1rem] leading-7" style={{ color: 'var(--ink-muted)' }}>
                     {info.details.map((detail) => (
                       <p key={detail}>{detail}</p>
@@ -493,22 +631,27 @@ export function MarketingHomePage({
             })}
 
             <article className="soft-card rounded-[2rem] p-8 sm:p-9">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full" style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }}>
+              <div
+                className="flex h-14 w-14 items-center justify-center rounded-full"
+                style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }}
+              >
                 <MapPin className="h-6 w-6" style={{ color: 'var(--brand)', strokeWidth: 1.7 }} />
               </div>
-
               <h3
                 className="mt-8 text-[2rem] leading-none tracking-[-0.04em]"
                 style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
               >
                 Localidade
               </h3>
-
               <p className="mt-6 text-[1rem] leading-7" style={{ color: 'var(--ink-muted)' }}>
-                R. Gustavo Teixeira, 42 - Vila Independência
+                {ADDRESS}
               </p>
-
-              <a href="https://maps.app.goo.gl/B2EL1dMpC4auAbj96" target="_blank" rel="noreferrer" className="premium-button mt-8 inline-flex w-auto px-6 py-3">
+              <a
+                href={MAPS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="premium-button mt-8 inline-flex w-auto px-6 py-3"
+              >
                 Abrir no Maps
               </a>
             </article>
@@ -516,9 +659,16 @@ export function MarketingHomePage({
         </div>
       </section>
 
+      {/* ── Final CTA ─────────────────────────────────────────────────────── */}
       <section className="section-shell overflow-hidden" style={{ backgroundColor: 'var(--surface-dark)' }}>
-        <div className="absolute -left-16 top-10 h-56 w-56 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(200, 135, 63, 0.18)' }} />
-        <div className="absolute -right-16 bottom-10 h-64 w-64 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(111, 143, 114, 0.16)' }} />
+        <div
+          className="absolute -left-16 top-10 h-56 w-56 rounded-full blur-3xl"
+          style={{ backgroundColor: 'rgba(200, 135, 63, 0.18)' }}
+        />
+        <div
+          className="absolute -right-16 bottom-10 h-64 w-64 rounded-full blur-3xl"
+          style={{ backgroundColor: 'rgba(111, 143, 114, 0.16)' }}
+        />
 
         <div className="content-shell relative z-10">
           <div className="mx-auto max-w-4xl text-center">
@@ -532,8 +682,8 @@ export function MarketingHomePage({
               Seu próximo almoço pode sair daqui em minutos.
             </h2>
             <p className="mx-auto mt-7 max-w-2xl text-[1.1rem] leading-8 text-white/74">
-              Monte seu pedido pelo cardápio e receba uma marmita quentinha, bem montada e pronta para transformar a pausa do
-              dia em um momento melhor.
+              Monte seu pedido pelo cardápio e receba uma marmita quentinha, bem montada e pronta para transformar a
+              pausa do dia em um momento melhor.
             </p>
 
             <div className="mt-10 flex justify-center">
@@ -543,7 +693,9 @@ export function MarketingHomePage({
               </Link>
             </div>
 
-            <p className="mt-6 text-sm uppercase tracking-[0.22em] text-white/46">Atendimento complementar pelo WhatsApp</p>
+            <p className="mt-6 text-sm uppercase tracking-[0.22em] text-white/46">
+              Atendimento complementar pelo WhatsApp
+            </p>
           </div>
         </div>
       </section>

@@ -45,10 +45,15 @@ coverage/
 tmp/
 temp/
 
+
+output/
+.playwright/
+**/.ms-playwright/
+**/localappdata/
 adb-err.txt
 adb-out.txt
-output/
 tmp-*.png
 tmp-*.xml
 **/.playwright-cli/
 **/.npm-cache/
+*.tsbuildinfo

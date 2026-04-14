@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowLeft, MessageCircle, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Instagram, Mail, MapPin, MessageCircle, Phone, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { BrandLogo } from '@/components/site/BrandLogo';
 
@@ -211,11 +211,36 @@ export function SiteFooter() {
           <div>
             <p className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/42">Contato</p>
             <div className="mt-5 space-y-4 text-white/72">
-              <div>{PHONE_DISPLAY}</div>
-              <a href={MAPS_URL} target="_blank" rel="noreferrer" className="block transition-colors hover:text-[var(--gold)]">
-                {ADDRESS}
+              <div className="flex items-center gap-3">
+                <Phone className="h-4 w-4 shrink-0" />
+                <span>{PHONE_DISPLAY}</span>
+              </div>
+              <a
+                href={MAPS_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-start gap-3 transition-colors hover:text-[var(--gold)]"
+              >
+                <MapPin className="mt-1 h-4 w-4 shrink-0" />
+                <span>{ADDRESS}</span>
               </a>
-              <div>contato@sabormineiro.com</div>
+              <div className="flex items-center gap-3">
+                <Mail className="h-4 w-4 shrink-0" />
+                <span>contato@sabormineiro.com</span>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <a
+                href="https://www.instagram.com/daianaxavier_marmitaria"
+                target="_blank"
+                rel="noreferrer"
+                className="flex h-11 w-11 items-center justify-center rounded-full border transition-colors hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                style={{ borderColor: 'rgba(255,255,255,0.14)' }}
+                aria-label="Instagram"
+              >
+                <Instagram className="h-4 w-4" />
+              </a>
             </div>
           </div>
         </div>
