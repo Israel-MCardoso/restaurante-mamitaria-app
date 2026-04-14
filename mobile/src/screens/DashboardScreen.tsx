@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { DollarSign, Package, ShoppingBag, Tags, TrendingUp, Users } from 'lucide-react-native';
+import { DollarSign, Package, ShoppingBag, Store, Tags, TrendingUp } from 'lucide-react-native';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { api } from '../services/api';
 import { AppScreen } from '../components/layout/AppScreen';
@@ -19,8 +19,11 @@ export default function DashboardScreen({ navigation }: any) {
     revenue: 0,
     count: 0,
     ticket: 0,
-    customers: 0,
+    activeProducts: 0,
+    activeCategories: 0,
   });
+  const [restaurantName, setRestaurantName] = useState('Restaurante');
+  const [restaurantSlug, setRestaurantSlug] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,30 +40,38 @@ export default function DashboardScreen({ navigation }: any) {
     }
 
     setLoading(true);
-    const [summary, customers] = await Promise.all([
+
+    const [summary, products, categories, restaurant] = await Promise.all([
       api.stats.summary(restaurantId),
-      api.customers.list(restaurantId),
+      api.products.list(restaurantId),
+      api.categories.list(restaurantId),
+      api.restaurants.get(restaurantId),
     ]);
 
     setStats({
       revenue: summary.revenue,
       count: summary.count,
       ticket: summary.ticket,
-      customers: customers.data?.length || 0,
+      activeProducts: (products.data || []).filter((product) => product.is_available !== false).length,
+      activeCategories: (categories.data || []).filter((category) => category.is_active !== false).length,
     });
+    setRestaurantName(restaurant.data?.name || 'Restaurante');
+    setRestaurantSlug(restaurant.data?.slug || '');
     setLoading(false);
   }
 
   const statCards = [
     { label: 'Faturamento hoje', value: formatCurrency(stats.revenue), icon: DollarSign, color: colors.success },
     { label: 'Pedidos hoje', value: String(stats.count), icon: ShoppingBag, color: colors.primary },
-    { label: 'Clientes ativos', value: String(stats.customers), icon: Users, color: colors.accent },
-    { label: 'Ticket médio', value: formatCurrency(stats.ticket), icon: TrendingUp, color: '#9C5C2B' },
+    { label: 'Produtos ativos', value: String(stats.activeProducts), icon: Package, color: colors.accent },
+    { label: 'Categorias ativas', value: String(stats.activeCategories), icon: Tags, color: '#9C5C2B' },
+    { label: 'Ticket médio', value: formatCurrency(stats.ticket), icon: TrendingUp, color: '#8A5642' },
   ];
 
   const shortcuts = [
-    { label: 'Produtos', icon: Package, onPress: () => navigation.navigate('Cardápio') },
+    { label: 'Produtos', icon: Package, onPress: () => navigation.navigate('Catálogo') },
     { label: 'Categorias', icon: Tags, onPress: () => navigation.navigate('Categorias') },
+    { label: 'Ajustes', icon: Store, onPress: () => navigation.navigate('Ajustes') },
   ];
 
   return (
@@ -68,7 +79,7 @@ export default function DashboardScreen({ navigation }: any) {
       <PageHeader
         eyebrow="Visão geral"
         title="Dashboard"
-        subtitle="Resumo da operação do restaurante para acompanhar o dia com rapidez."
+        subtitle="Painel operacional do restaurante para manter o catálogo atualizado e a loja pública consistente."
       />
 
       {loading ? (
@@ -77,6 +88,19 @@ export default function DashboardScreen({ navigation }: any) {
         </View>
       ) : (
         <>
+          <Card style={styles.heroCard}>
+            <View style={styles.heroIcon}>
+              <Store size={22} color={colors.primary} />
+            </View>
+            <Text style={styles.heroEyebrow}>Operação conectada</Text>
+            <Text style={styles.heroTitle}>{restaurantName}</Text>
+            <Text style={styles.heroCopy}>
+              {restaurantSlug
+                ? `Tudo o que você ativar aqui reflete na vitrine pública em /${restaurantSlug}.`
+                : 'Ative categorias e produtos aqui para manter a vitrine pública alinhada com a operação.'}
+            </Text>
+          </Card>
+
           <View style={styles.grid}>
             {statCards.map(({ label, value, icon: Icon, color }) => (
               <Card key={label} style={styles.statCard}>
@@ -106,8 +130,8 @@ export default function DashboardScreen({ navigation }: any) {
           <Card style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Resumo rápido</Text>
             <Text style={styles.summaryText}>
-              O painel está padronizado para focar em decisão rápida: pedidos do dia, faturamento e navegação direta
-              para manutenção do cardápio.
+              Use o catálogo para publicar ou ocultar itens, organize as categorias da casa e mantenha as informações da
+              loja prontas para o cliente final sem sair do app.
             </Text>
           </Card>
         </>
@@ -122,6 +146,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: spacing.huge * 2,
+  },
+  heroCard: {
+    marginBottom: spacing.lg,
+  },
+  heroIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primarySoft,
+    marginBottom: spacing.md,
+  },
+  heroEyebrow: {
+    ...typography.overline,
+    color: colors.primary,
+    marginBottom: spacing.xs,
+  },
+  heroTitle: {
+    ...typography.title,
+  },
+  heroCopy: {
+    ...typography.body,
+    marginTop: spacing.sm,
   },
   grid: {
     flexDirection: 'row',

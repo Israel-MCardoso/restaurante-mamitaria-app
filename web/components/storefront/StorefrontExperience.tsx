@@ -45,6 +45,16 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
     [items, restaurant.id, restaurantId],
   );
 
+  const totalProducts = useMemo(
+    () => categories.reduce((sum, category) => sum + category.products.length, 0),
+    [categories],
+  );
+
+  const highlightedCategories = useMemo(
+    () => categories.filter((category) => category.products.length > 0).slice(0, 6),
+    [categories],
+  );
+
   const addProductToCart = (product: StorefrontProduct) => {
     addItem({
       id: product.id,
@@ -59,7 +69,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
   };
 
   return (
-    <main className="page-shell pt-28 text-stone-900">
+    <main className="page-shell pt-10 text-stone-900">
       <StorefrontRestaurantSync
         restaurant={{
           id: restaurant.id,
@@ -68,106 +78,150 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
         }}
       />
 
-      <section className="relative flex min-h-[88vh] items-end overflow-hidden">
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: restaurant.banner_url
-              ? `url('${restaurant.banner_url}')`
-              : "url('https://images.unsplash.com/photo-1621179816782-1c39a6583fbc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxicmF6aWxpYW4lMjBmZWlqb2FkYSUyMGZvb2R8ZW58MXx8fHwxNzc1NzU3MTcxfDA&ixlib=rb-4.1.0&q=80&w=1600')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              'linear-gradient(90deg, rgba(18, 12, 10, 0.86) 0%, rgba(18, 12, 10, 0.58) 44%, rgba(18, 12, 10, 0.34) 100%)',
-          }}
-        />
-        <div className="hero-orb absolute -left-10 top-40 h-48 w-48 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(200, 135, 63, 0.24)' }} />
-        <div className="hero-orb absolute bottom-24 right-12 h-64 w-64 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(111, 143, 114, 0.18)', animationDelay: '1.5s' }} />
-
-        <div className="content-shell relative z-10 w-full pb-14 sm:pb-18 lg:pb-24">
-          <div className="grid items-end gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.34fr)] lg:gap-10">
-            <div className="max-w-4xl text-white">
+      <section className="section-shell pt-6">
+        <div className="content-shell">
+          <div
+            className="overflow-hidden rounded-[2.7rem] border"
+            style={{ borderColor: 'rgba(201, 139, 100, 0.16)', boxShadow: '0 28px 80px rgba(77, 46, 35, 0.12)' }}
+          >
+            <div className="relative min-h-[320px] overflow-hidden">
               <div
-                className="hero-reveal inline-flex items-center gap-3 rounded-full px-4 py-2"
+                className="absolute inset-0"
                 style={{
-                  backgroundColor: 'rgba(255, 250, 244, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.16)',
+                  backgroundImage: restaurant.banner_url
+                    ? `url('${restaurant.banner_url}')`
+                    : "url('https://images.unsplash.com/photo-1621179816782-1c39a6583fbc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxicmF6aWxpYW4lMjBmZWlqb2FkYSUyMGZvb2R8ZW58MXx8fHwxNzc1NzU3MTcxfDA&ixlib=rb-4.1.0&q=80&w=1600')",
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
                 }}
-              >
-                <span className="text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-white/88">
-                  Pedido online oficial
-                </span>
-              </div>
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'linear-gradient(115deg, rgba(22, 14, 11, 0.84) 0%, rgba(22, 14, 11, 0.63) 48%, rgba(22, 14, 11, 0.22) 100%)',
+                }}
+              />
+              <div
+                className="absolute inset-x-0 bottom-0 h-32"
+                style={{ background: 'linear-gradient(180deg, rgba(22,14,11,0) 0%, rgba(22,14,11,0.38) 100%)' }}
+              />
 
-              <div className="hero-reveal hero-reveal-delay mt-8 max-w-4xl">
-                <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/58">
-                  Cardápio da casa
-                </span>
-                <h1
-                  className="max-w-[12ch] text-[clamp(4rem,9vw,8rem)] font-semibold leading-[0.92] tracking-[-0.055em]"
-                  style={{ fontFamily: 'var(--font-display)' }}
-                >
-                  {restaurant.name}
-                </h1>
-                <p className="mt-7 max-w-2xl text-[clamp(1.05rem,1.8vw,1.28rem)] leading-8 text-white/80 sm:leading-9">
-                  Escolha seus pratos, monte o carrinho e finalize o pedido em poucos passos. Antes da confirmação,
-                  revisamos todas as informações para que você siga com tranquilidade.
-                </p>
-              </div>
+              <div className="content-shell relative z-10 flex min-h-[320px] items-end py-10 md:py-12">
+                <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.52fr)] lg:items-end">
+                  <div className="max-w-4xl text-white">
+                    <div
+                      className="hero-reveal inline-flex items-center gap-3 rounded-full px-4 py-2"
+                      style={{
+                        backgroundColor: 'rgba(255, 250, 244, 0.08)',
+                        border: '1px solid rgba(255, 255, 255, 0.16)',
+                      }}
+                    >
+                      <span className="text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-white/88">Loja da casa</span>
+                    </div>
 
-              <div className="hero-reveal hero-reveal-delay mt-10 flex flex-col items-start gap-4 sm:flex-row">
-                <button type="button" onClick={() => setIsCartOpen(true)} className="premium-button px-8 py-4 sm:w-auto">
-                  Ver carrinho
-                  <ShoppingBag className="h-4 w-4" />
-                </button>
-                <a
-                  href={`https://wa.me/5515991442274?text=${encodeURIComponent(`Ola! Gostaria de pedir na loja ${restaurant.name}.`)}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="premium-button premium-button--ghost px-8 py-4 text-white sm:w-auto"
-                  style={{ color: 'white' }}
-                >
-                  <MessageCircle className="h-5 w-5" />
-                  WhatsApp
-                </a>
-              </div>
+                    <div className="hero-reveal hero-reveal-delay mt-6 max-w-4xl">
+                      <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/58">
+                        Cardápio online
+                      </span>
+                      <h1
+                        className="max-w-[12ch] text-[clamp(3rem,6vw,5.1rem)] font-semibold leading-[0.94] tracking-[-0.055em]"
+                        style={{ fontFamily: 'var(--font-display)' }}
+                      >
+                        {restaurant.name}
+                      </h1>
+                      <p className="mt-5 max-w-2xl text-[clamp(1rem,1.7vw,1.14rem)] leading-8 text-white/78">
+                        Escolha com calma, monte seu pedido e avance para o checkout com a mesma atmosfera acolhedora da marca.
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="hero-reveal hero-reveal-delay mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/14 pt-6 text-sm text-white/72">
-                <span>{categories.length} categorias disponíveis</span>
-                <span className="hidden h-1.5 w-1.5 rounded-full bg-white/28 sm:block" />
-                <span>{itemCount} itens no carrinho atual</span>
-              </div>
-            </div>
+                  <div
+                    className="premium-surface hero-reveal rounded-[2rem] p-6 text-left"
+                    style={{ backgroundColor: 'rgba(255, 250, 244, 0.78)' }}
+                  >
+                    <div className="grid gap-5">
+                      <div>
+                        <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em]" style={{ color: 'var(--brand)' }}>
+                          Compra prática
+                        </p>
+                        <p className="mt-3 text-sm leading-7" style={{ color: 'var(--ink-muted)' }}>
+                          O cardápio foi organizado para facilitar a escolha, destacar os pratos certos e levar você ao checkout sem ruído.
+                        </p>
+                      </div>
 
-            <div className="hidden gap-6 text-white/84 lg:grid">
-              <div className="border-t border-white/14 pt-5">
-                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Receitas da casa</p>
-                <p className="mt-3 text-lg leading-8 text-white/82">
-                  Pratos preparados para o dia, com apresentação caprichada e sabor de comida feita com carinho.
-                </p>
-              </div>
-              <div className="border-t border-white/14 pt-5">
-                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Pedido simples</p>
-                <p className="mt-3 text-lg leading-8 text-white/82">
-                  Adicione ao carrinho, revise com calma e siga para a finalização sem complicação.
-                </p>
+                      <div className="grid gap-3 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                        <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
+                          <span>Categorias ativas</span>
+                          <strong style={{ color: 'var(--ink-strong)' }}>{categories.length}</strong>
+                        </div>
+                        <div className="flex items-center justify-between border-b pb-3" style={{ borderColor: 'var(--line)' }}>
+                          <span>Pratos disponíveis</span>
+                          <strong style={{ color: 'var(--ink-strong)' }}>{totalProducts}</strong>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Itens no carrinho</span>
+                          <strong style={{ color: 'var(--ink-strong)' }}>{itemCount}</strong>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <button type="button" onClick={() => setIsCartOpen(true)} className="premium-button px-6 py-3 sm:w-auto">
+                          Ver carrinho
+                          <ShoppingBag className="h-4 w-4" />
+                        </button>
+                        <a
+                          href={`https://wa.me/5515991442274?text=${encodeURIComponent(`Olá! Gostaria de pedir na loja ${restaurant.name}.`)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-full border px-6 py-3 text-center text-sm font-semibold transition hover:bg-white"
+                          style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            <MessageCircle className="h-4 w-4" />
+                            WhatsApp
+                          </span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="section-shell section-divider overflow-hidden" style={{ backgroundColor: 'rgba(255, 255, 255, 0.55)' }}>
-        <div className="absolute left-1/2 top-30 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl" style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }} />
+      <section className="section-shell section-divider overflow-hidden pt-10" style={{ backgroundColor: 'rgba(255, 255, 255, 0.55)' }}>
+        <div
+          className="absolute left-1/2 top-30 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl"
+          style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }}
+        />
         <div className="content-shell relative z-10">
+          {highlightedCategories.length > 0 ? (
+            <div className="mb-10 flex flex-wrap items-center gap-3 border-b pb-8" style={{ borderColor: 'rgba(75, 46, 35, 0.1)' }}>
+              <span className="text-xs font-semibold uppercase tracking-[0.26em]" style={{ color: 'rgba(53, 39, 34, 0.58)' }}>
+                Navegue por
+              </span>
+              {highlightedCategories.map((category) => (
+                <a
+                  key={category.id}
+                  href={`#category-${category.id}`}
+                  className="rounded-full border px-4 py-2 text-sm font-semibold transition hover:-translate-y-0.5 hover:bg-white"
+                  style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+                >
+                  {category.name}
+                </a>
+              ))}
+            </div>
+          ) : null}
+
           {categories.length === 0 ? (
             <div className="soft-card rounded-[2rem] p-8 text-center">
-              <h2 className="text-[2.4rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+              <h2
+                className="text-[2.4rem] leading-none tracking-[-0.05em]"
+                style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+              >
                 Cardápio em atualização.
               </h2>
               <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
@@ -175,44 +229,65 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
               </p>
             </div>
           ) : (
-            <div className="space-y-10">
-              <div className="section-intro lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.7fr)] lg:items-end lg:justify-between">
+            <div className="space-y-14">
+              <div
+                className="section-intro border-b pb-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.7fr)] lg:items-end lg:justify-between"
+                style={{ borderColor: 'rgba(75, 46, 35, 0.1)' }}
+              >
                 <div>
                   <span className="section-kicker">Cardápio em destaque</span>
                   <h2 className="section-title mt-4">Pratos com cara de favoritos instantâneos.</h2>
                 </div>
                 <p className="section-copy lg:justify-self-end">
-                  Explore as categorias, escolha seus pratos preferidos e monte seu pedido com calma.
+                  Explore as categorias, escolha seus pratos preferidos e monte seu pedido com uma navegação mais clara, elegante e objetiva.
                 </p>
               </div>
 
               {categories.map((category) => (
-                <section key={category.id} className="space-y-4">
-                  <div className="flex items-end justify-between gap-4">
-                    <div>
+                <section
+                  key={category.id}
+                  id={`category-${category.id}`}
+                  className="scroll-mt-28 border-t pt-8"
+                  style={{ borderColor: 'rgba(75, 46, 35, 0.08)' }}
+                >
+                  <div
+                    className="grid gap-6 border-b pb-6 md:grid-cols-[minmax(0,1fr)_auto]"
+                    style={{ borderColor: 'rgba(75, 46, 35, 0.08)' }}
+                  >
+                    <div className="max-w-2xl">
                       <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: 'var(--brand)' }}>
                         Categoria
                       </p>
                       <h2
-                        className="mt-2 text-[2.4rem] leading-none tracking-[-0.045em]"
+                        className="mt-3 text-[clamp(2.35rem,4vw,3.2rem)] leading-none tracking-[-0.045em]"
                         style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
                       >
                         {category.name}
                       </h2>
+                      <p className="mt-3 max-w-xl text-sm leading-7" style={{ color: 'var(--ink-muted)' }}>
+                        Seleção pensada para manter ritmo, clareza e apetite durante toda a experiência de compra.
+                      </p>
                     </div>
-                    <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
-                      {category.products.length} itens
-                    </p>
+                    <div className="self-end">
+                      <p className="text-sm font-medium" style={{ color: 'var(--ink-muted)' }}>
+                        {category.products.length} {category.products.length === 1 ? 'item disponível' : 'itens disponíveis'}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="grid gap-6 lg:grid-cols-2">
+                  <div className="mt-8 grid gap-5">
                     {category.products.map((product) => {
                       const price = product.promo_price ?? product.price;
+                      const hasPromo = Boolean(product.promo_price);
 
                       return (
-                        <article key={product.id} className="soft-card overflow-hidden rounded-[2rem] transition hover:-translate-y-0.5">
-                          <div className="flex h-full flex-col gap-5 p-5 md:flex-row">
-                            <div className="food-image-frame h-40 w-full overflow-hidden rounded-[1.6rem] bg-stone-100 md:h-auto md:w-48 md:flex-none">
+                        <article
+                          key={product.id}
+                          className="group overflow-hidden rounded-[2rem] border bg-[rgba(255,251,246,0.84)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_48px_rgba(92,66,53,0.1)]"
+                          style={{ borderColor: 'rgba(75, 46, 35, 0.1)' }}
+                        >
+                          <div className="grid h-full gap-5 p-5 lg:grid-cols-[190px_minmax(0,1fr)_auto] lg:items-center lg:p-6">
+                            <div className="food-image-frame h-44 w-full overflow-hidden rounded-[1.6rem] bg-stone-100 lg:h-40">
                               {product.image_url ? (
                                 <img src={product.image_url} alt={product.name} className="food-image" />
                               ) : (
@@ -224,38 +299,57 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
 
                             <div className="flex flex-1 flex-col justify-between gap-4">
                               <div>
-                                <div className="flex items-start justify-between gap-4">
-                                  <h3 className="text-[2rem] leading-none tracking-[-0.04em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+                                <div className="flex flex-wrap items-start gap-3">
+                                  <span
+                                    className="rounded-full px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.16em]"
+                                    style={{
+                                      backgroundColor: hasPromo ? 'rgba(200, 135, 63, 0.14)' : 'rgba(234, 217, 192, 0.46)',
+                                      color: 'var(--brand)',
+                                    }}
+                                  >
+                                    {hasPromo ? 'Oferta da casa' : 'Pedido online'}
+                                  </span>
+                                </div>
+                                <div className="mt-4 flex items-start justify-between gap-4">
+                                  <h3
+                                    className="max-w-[14ch] text-[clamp(1.9rem,3vw,2.4rem)] leading-none tracking-[-0.04em]"
+                                    style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+                                  >
                                     {product.name}
                                   </h3>
-                                  <div className="text-right">
-                                    {product.promo_price ? (
-                                      <p className="text-xs line-through" style={{ color: 'var(--ink-muted)' }}>
-                                        {formatMoney(product.price)}
-                                      </p>
-                                    ) : null}
-                                    <p className="text-lg font-semibold" style={{ color: 'var(--brand)' }}>
-                                      {formatMoney(price)}
-                                    </p>
-                                  </div>
                                 </div>
                                 <p className="mt-4 text-sm leading-7" style={{ color: 'var(--ink-muted)' }}>
                                   {product.description?.trim() || 'Prato disponível para pedido online.'}
                                 </p>
                               </div>
+                            </div>
 
-                              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                                <span
-                                  className="rounded-full px-3 py-1.5 text-[0.72rem] font-semibold uppercase tracking-[0.16em]"
-                                  style={{ backgroundColor: 'rgba(234, 217, 192, 0.46)', color: 'var(--brand)' }}
-                                >
-                                  Pedido online
-                                </span>
-                                <button type="button" onClick={() => addProductToCart(product)} className="premium-button px-6 py-3 sm:w-auto">
-                                  Adicionar ao carrinho
-                                  <ArrowRight className="h-4 w-4" />
-                                </button>
+                            <div className="flex flex-col justify-between gap-5 lg:min-w-[210px] lg:items-end">
+                              <div
+                                className="rounded-[1.6rem] border px-5 py-4 text-left lg:text-right"
+                                style={{ borderColor: 'rgba(75, 46, 35, 0.1)', backgroundColor: 'rgba(255,255,255,0.58)' }}
+                              >
+                                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.22em]" style={{ color: 'rgba(53, 39, 34, 0.52)' }}>
+                                  Valor
+                                </p>
+                                {product.promo_price ? (
+                                  <p className="mt-2 text-xs line-through" style={{ color: 'var(--ink-muted)' }}>
+                                    {formatMoney(product.price)}
+                                  </p>
+                                ) : null}
+                                <p className="mt-1 text-[1.75rem] font-semibold leading-none" style={{ color: 'var(--brand)' }}>
+                                  {formatMoney(price)}
+                                </p>
                               </div>
+
+                              <button
+                                type="button"
+                                onClick={() => addProductToCart(product)}
+                                className="premium-button w-full px-6 py-3 lg:w-auto"
+                              >
+                                Adicionar
+                                <ArrowRight className="h-4 w-4" />
+                              </button>
                             </div>
                           </div>
                         </article>
@@ -273,7 +367,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
         <button
           type="button"
           onClick={() => setIsCartOpen(true)}
-          className="premium-button fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-2xl -translate-x-1/2 items-center justify-between rounded-[2rem] px-5 py-4 text-white shadow-[0_18px_50px_rgba(77,46,35,0.24)]"
+          className="premium-button fixed bottom-6 left-1/2 z-40 flex w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2 items-center justify-between rounded-[2rem] px-5 py-4 text-white shadow-[0_18px_50px_rgba(77,46,35,0.24)]"
         >
           <div className="flex items-center gap-3">
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10">
@@ -281,7 +375,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
             </span>
             <div className="text-left">
               <p className="text-sm font-semibold">{itemCount} itens no carrinho</p>
-              <p className="text-xs text-stone-100/80">Toque para revisar e seguir ao checkout</p>
+              <p className="text-xs text-stone-100/80">Resumo pronto para revisar e seguir ao checkout</p>
             </div>
           </div>
           <div className="text-right">
@@ -299,7 +393,10 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
                 <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: 'var(--brand)' }}>
                   Carrinho
                 </p>
-                <h2 className="mt-1 text-[2.4rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+                <h2
+                  className="mt-1 text-[2.4rem] leading-none tracking-[-0.05em]"
+                  style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+                >
                   Seu pedido
                 </h2>
               </div>
@@ -315,7 +412,7 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
 
             <div className="max-h-[52vh] space-y-4 overflow-y-auto px-6 py-5">
               {cartItems.length === 0 ? (
-                <div className="soft-card rounded-[1.5rem] p-6 text-center">Seu carrinho ainda esta vazio.</div>
+                <div className="soft-card rounded-[1.5rem] p-6 text-center">Seu carrinho ainda está vazio.</div>
               ) : (
                 cartItems.map((item) => (
                   <div key={item.id} className="soft-card flex items-start justify-between gap-4 rounded-[1.5rem] p-4">
@@ -371,7 +468,10 @@ export function StorefrontExperience({ restaurant, categories }: StorefrontExper
               )}
             </div>
 
-            <div className="border-t px-6 py-5" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)' }}>
+            <div
+              className="border-t px-6 py-5"
+              style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)' }}
+            >
               <div className="flex items-center justify-between text-sm" style={{ color: 'var(--ink-muted)' }}>
                 <span>Subtotal</span>
                 <span className="font-semibold" style={{ color: 'var(--ink-strong)' }}>

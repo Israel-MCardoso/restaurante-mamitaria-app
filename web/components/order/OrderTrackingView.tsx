@@ -94,7 +94,11 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
   useEffect(() => {
     if (!accessToken) {
-      setErrorMessage('Abra este pedido pelo link que você recebeu para acompanhar as atualizações.');
+      if (!order) {
+        setErrorMessage('Não conseguimos localizar seu pedido. Verifique o link e tente novamente.');
+      } else {
+        setErrorMessage(null);
+      }
       return;
     }
 
@@ -180,13 +184,16 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
   if (!order) {
     return (
-      <main className="page-shell pt-32">
+      <main className="page-shell pt-10">
         <section className="section-shell min-h-screen">
           <div className="content-shell">
             <div className="soft-card flex min-h-[360px] items-center justify-center rounded-[2rem] p-8 text-center">
               <div>
                 <Clock className="mx-auto h-8 w-8" style={{ color: 'var(--brand)' }} />
-                <p className="mt-4 text-sm font-semibold uppercase tracking-[0.2em]" style={{ color: 'var(--ink-muted)' }}>
+                <p
+                  className="mt-4 text-sm font-semibold uppercase tracking-[0.2em]"
+                  style={{ color: 'var(--ink-muted)' }}
+                >
                   Carregando pedido
                 </p>
               </div>
@@ -198,12 +205,15 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
   }
 
   return (
-    <main className="page-shell pt-32">
+    <main className="page-shell pt-10">
       <section className="section-shell min-h-screen">
         <div className="content-shell">
           <div className="mb-8 text-center">
             <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
-            <h1 className="text-[3.2rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+            <h1
+              className="text-[3.2rem] leading-none tracking-[-0.05em]"
+              style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+            >
               Pedido recebido!
             </h1>
             <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
@@ -214,19 +224,35 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
           <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.45fr)] lg:items-start">
             <div className="soft-card rounded-[2rem] p-7 sm:p-9">
               <span className="section-kicker">Acompanhamento</span>
-              <h2 className="mt-4 text-[clamp(3rem,5vw,4.6rem)] leading-[0.94] tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
+              <h2
+                className="mt-4 text-[clamp(3rem,5vw,4.6rem)] leading-[0.94] tracking-[-0.05em]"
+                style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+              >
                 {statusMap[order.status]}
               </h2>
-              <div className="mt-6 flex items-center gap-4 rounded-[1.25rem] border p-4" style={{ backgroundColor: 'rgba(200, 135, 63, 0.08)', borderColor: 'rgba(200, 135, 63, 0.18)' }}>
+              <div
+                className="mt-6 flex items-center gap-4 rounded-[1.25rem] border p-4"
+                style={{
+                  backgroundColor: 'rgba(200, 135, 63, 0.08)',
+                  borderColor: 'rgba(200, 135, 63, 0.18)',
+                }}
+              >
                 <Clock style={{ color: 'var(--brand)' }} />
                 <div>
-                  <p className="font-bold" style={{ color: 'var(--brand)' }}>{statusMap[order.status]}</p>
-                  <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>Atualizado automaticamente</p>
+                  <p className="font-bold" style={{ color: 'var(--brand)' }}>
+                    {statusMap[order.status]}
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>
+                    Atualizado automaticamente
+                  </p>
                 </div>
               </div>
 
               {errorMessage ? (
-                <div className="mt-4 rounded-[1.25rem] border px-4 py-3 text-sm" style={{ borderColor: '#f0d7a6', backgroundColor: '#fff8e7', color: '#946200' }}>
+                <div
+                  className="mt-4 rounded-[1.25rem] border px-4 py-3 text-sm"
+                  style={{ borderColor: '#f0d7a6', backgroundColor: '#fff8e7', color: '#946200' }}
+                >
                   {errorMessage}
                 </div>
               ) : null}
@@ -240,10 +266,14 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
                       style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)' }}
                     >
                       <div>
-                        <p className="font-medium" style={{ color: 'var(--ink-strong)' }}>{statusMap[entry.status]}</p>
+                        <p className="font-medium" style={{ color: 'var(--ink-strong)' }}>
+                          {statusMap[entry.status]}
+                        </p>
                         {entry.note ? <p style={{ color: 'var(--ink-muted)' }}>{entry.note}</p> : null}
                       </div>
-                      <span className="whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>{formatDateTime(entry.changed_at)}</span>
+                      <span className="whitespace-nowrap" style={{ color: 'var(--ink-muted)' }}>
+                        {formatDateTime(entry.changed_at)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -264,9 +294,14 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
                 {order.payment_method === 'pix' && order.payment_data?.copy_paste_code ? (
                   <div className="pt-2">
-                    <p className="mb-3 text-sm" style={{ color: 'var(--ink-muted)' }}>Use o código Pix abaixo para concluir o pagamento.</p>
+                    <p className="mb-3 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                      Use o código Pix abaixo para concluir o pagamento.
+                    </p>
                     {order.payment_data.qr_code_base64 ? (
-                      <div className="mb-3 flex justify-center rounded-lg border bg-white p-3" style={{ borderColor: 'var(--line)' }}>
+                      <div
+                        className="mb-3 flex justify-center rounded-lg border bg-white p-3"
+                        style={{ borderColor: 'var(--line)' }}
+                      >
                         <img
                           src={resolveQrImageSrc(order.payment_data.qr_code_base64)}
                           alt="QR Code Pix"
@@ -274,14 +309,29 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
                         />
                       </div>
                     ) : null}
-                    <div className="rounded-lg border p-3 break-all text-sm" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)', color: 'var(--ink)' }}>
+                    <div
+                      className="rounded-lg border p-3 break-all text-sm"
+                      style={{
+                        borderColor: 'var(--line)',
+                        backgroundColor: 'rgba(255,250,244,0.52)',
+                        color: 'var(--ink)',
+                      }}
+                    >
                       {order.payment_data.copy_paste_code}
                     </div>
-                    <button type="button" onClick={handleCopyPixCode} className="premium-button mt-3 px-4 py-3 sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={handleCopyPixCode}
+                      className="premium-button mt-3 px-4 py-3 sm:w-auto"
+                    >
                       <Copy className="h-4 w-4" />
                       Copiar código Pix
                     </button>
-                    {copyFeedback ? <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>{copyFeedback}</p> : null}
+                    {copyFeedback ? (
+                      <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                        {copyFeedback}
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -297,7 +347,10 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
                   <div className="flex gap-3">
                     <Package className="w-5" style={{ color: 'var(--ink-muted)' }} />
                     <p style={{ color: 'var(--ink)' }}>
-                      Total: {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.total_amount)}
+                      Total:{' '}
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+                        order.total_amount,
+                      )}
                     </p>
                   </div>
                 </div>

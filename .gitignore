@@ -44,3 +44,11 @@ coverage/
 *.log
 tmp/
 temp/
+
+adb-err.txt
+adb-out.txt
+output/
+tmp-*.png
+tmp-*.xml
+**/.playwright-cli/
+**/.npm-cache/

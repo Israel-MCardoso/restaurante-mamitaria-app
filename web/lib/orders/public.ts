@@ -289,7 +289,7 @@ function humanizePublicError(code: string, fallback: string) {
       return 'Não encontramos esse pedido.';
     case 'ORDER_ACCESS_DENIED':
     case 'MISSING_ORDER_ACCESS_TOKEN':
-      return 'Abra o pedido pelo link que você recebeu para acompanhar as atualizações.';
+      return 'Não conseguimos localizar seu pedido. Verifique o link e tente novamente.';
     case 'RESTAURANT_NOT_FOUND':
       return 'A loja informada não foi encontrada.';
     case 'RESTAURANT_INACTIVE':

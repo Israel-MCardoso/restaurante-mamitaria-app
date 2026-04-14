@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { MessageCircle, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, MessageCircle, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
-import { useStorefront } from '@/contexts/StorefrontContext';
 import { BrandLogo } from '@/components/site/BrandLogo';
 
 const PHONE_DISPLAY = '+55 15 99144-2274';
@@ -15,11 +14,31 @@ function getWhatsAppUrl(message = 'Olá! Gostaria de fazer um pedido.') {
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }
 
-export function SiteHeader({ fallbackMenuHref = '/checkout' }: { fallbackMenuHref?: string }) {
+function CartShortcut({ href, label = 'Carrinho' }: { href: string; label?: string }) {
   const { itemCount } = useCart();
-  const { restaurant } = useStorefront();
-  const menuHref = restaurant?.slug ? `/${restaurant.slug}` : fallbackMenuHref;
 
+  return (
+    <Link
+      href={href}
+      className="premium-button relative w-auto shrink-0 px-3 py-2.5 text-[0.9rem] sm:px-5 sm:py-3"
+      style={{ boxShadow: '0 12px 30px rgba(107, 62, 46, 0.16)', width: 'auto' }}
+      aria-label="Abrir carrinho"
+    >
+      <ShoppingBag className="h-4 w-4" />
+      <span className="hidden md:inline">{label}</span>
+      {itemCount ? (
+        <span
+          className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold"
+          style={{ backgroundColor: 'var(--surface-dark)', color: 'white' }}
+        >
+          {itemCount}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+export function MarketingHeader({ storefrontHref = '/checkout' }: { storefrontHref?: string }) {
   return (
     <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
       <div className="content-shell">
@@ -33,7 +52,7 @@ export function SiteHeader({ fallbackMenuHref = '/checkout' }: { fallbackMenuHre
 
           <nav className="hidden items-center gap-8 md:flex">
             <Link
-              href={menuHref}
+              href={storefrontHref}
               className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
               style={{ color: 'rgba(53, 39, 34, 0.74)' }}
             >
@@ -47,11 +66,11 @@ export function SiteHeader({ fallbackMenuHref = '/checkout' }: { fallbackMenuHre
               Sobre nós
             </Link>
             <Link
-              href="/#experiencia"
+              href="/#depoimentos"
               className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
               style={{ color: 'rgba(53, 39, 34, 0.74)' }}
             >
-              Experiência
+              Avaliações
             </Link>
           </nav>
 
@@ -68,24 +87,84 @@ export function SiteHeader({ fallbackMenuHref = '/checkout' }: { fallbackMenuHre
               <span className="hidden xl:inline">Pedir no WhatsApp</span>
               <span className="hidden lg:inline xl:hidden">WhatsApp</span>
             </a>
-            <Link
-              href={menuHref}
-              className="premium-button relative w-auto shrink-0 px-3 py-2.5 text-[0.9rem] sm:px-5 sm:py-3"
-              style={{ boxShadow: '0 12px 30px rgba(107, 62, 46, 0.16)', width: 'auto' }}
-              aria-label="Abrir carrinho"
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span className="hidden md:inline">Carrinho</span>
-              {itemCount ? (
-                <span
-                  className="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-bold"
-                  style={{ backgroundColor: 'var(--surface-dark)', color: 'white' }}
-                >
-                  {itemCount}
-                </span>
-              ) : null}
-            </Link>
+            <CartShortcut href={storefrontHref} />
           </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function StorefrontHeader({ storefrontHref }: { storefrontHref: string }) {
+  return (
+    <header className="sticky top-0 z-50 border-b border-black/5 bg-[rgba(255,250,244,0.92)] px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+      <div className="content-shell">
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="min-w-0 flex-1 md:flex-none">
+            <BrandLogo compact />
+          </Link>
+
+          <nav className="hidden items-center gap-6 md:flex">
+            <Link
+              href="/"
+              className="text-[0.78rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
+              style={{ color: 'rgba(53, 39, 34, 0.72)' }}
+            >
+              Início
+            </Link>
+            <Link
+              href={storefrontHref}
+              className="text-[0.78rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
+              style={{ color: 'rgba(53, 39, 34, 0.72)' }}
+            >
+              Cardápio
+            </Link>
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <a
+              href={getWhatsAppUrl()}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-full border px-4 py-3 text-sm font-semibold transition hover:bg-white"
+              style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+            >
+              <span className="inline-flex items-center gap-2">
+                <MessageCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">WhatsApp</span>
+              </span>
+            </a>
+            <CartShortcut href={storefrontHref} />
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export function AppHeader({
+  backHref,
+  backLabel,
+}: {
+  backHref: string;
+  backLabel: string;
+}) {
+  return (
+    <header className="sticky top-0 z-50 border-b border-black/5 bg-[rgba(255,250,244,0.96)] px-4 py-4 backdrop-blur sm:px-6 lg:px-8">
+      <div className="content-shell">
+        <div className="flex items-center justify-between gap-4">
+          <Link href="/" className="min-w-0 flex-1 md:flex-none">
+            <BrandLogo compact />
+          </Link>
+
+          <Link
+            href={backHref}
+            className="inline-flex items-center gap-2 rounded-full border px-4 py-3 text-sm font-semibold transition hover:bg-white"
+            style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>{backLabel}</span>
+          </Link>
         </div>
       </div>
     </header>
@@ -101,7 +180,7 @@ export function SiteFooter() {
       <div className="content-shell">
         <div className="grid gap-12 md:grid-cols-[1.2fr_0.8fr_0.9fr]">
           <div className="max-w-md">
-            <span className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-white/42">Família Mineira</span>
+            <span className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-white/42">Sabor Mineiro</span>
             <h3
               className="mt-4 text-[2.8rem] leading-none tracking-[-0.05em]"
               style={{ fontFamily: 'var(--font-display)' }}
@@ -123,8 +202,8 @@ export function SiteFooter() {
               <Link href="/#sobre" className="block transition-colors hover:text-[var(--gold)]">
                 Sobre nós
               </Link>
-              <Link href="/#experiencia" className="block transition-colors hover:text-[var(--gold)]">
-                Experiência
+              <Link href="/#depoimentos" className="block transition-colors hover:text-[var(--gold)]">
+                Avaliações
               </Link>
             </div>
           </div>
@@ -141,9 +220,23 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-12 border-t pt-6 text-sm uppercase tracking-[0.2em] text-white/34" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
-          © 2026 Família Mineira. Todos os direitos reservados.
+        <div
+          className="mt-12 border-t pt-6 text-sm uppercase tracking-[0.2em] text-white/34"
+          style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+        >
+          © 2026 Sabor Mineiro. Todos os direitos reservados.
         </div>
+      </div>
+    </footer>
+  );
+}
+
+export function AppFooter() {
+  return (
+    <footer className="border-t px-4 py-6 sm:px-6 lg:px-8" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.72)' }}>
+      <div className="content-shell flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <p style={{ color: 'var(--ink-muted)' }}>Sabor Mineiro</p>
+        <p style={{ color: 'var(--ink-muted)' }}>Atendimento: {PHONE_DISPLAY}</p>
       </div>
     </footer>
   );

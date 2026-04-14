@@ -96,7 +96,7 @@ export async function getOrderById(orderId: string, accessToken: string): Promis
   }
 
   if (!accessToken || accessToken.trim().length === 0) {
-    throw new ApiError(401, 'MISSING_ORDER_ACCESS_TOKEN', 'Abra este pedido pelo link que você recebeu para acompanhar as atualizações.');
+    throw new ApiError(401, 'MISSING_ORDER_ACCESS_TOKEN', 'Não conseguimos localizar seu pedido. Verifique o link e tente novamente.');
   }
 
   const supabase = getSupabaseAdminClient();
@@ -272,7 +272,7 @@ function humanizeErrorCode(code: string) {
     case 'ORDER_NOT_FOUND':
       return 'Pedido não encontrado.';
     case 'ORDER_ACCESS_DENIED':
-      return 'Abra este pedido pelo link que você recebeu para acompanhar as atualizações.';
+      return 'Não conseguimos localizar seu pedido. Verifique o link e tente novamente.';
     case 'INVALID_ORDER_STATUS':
       return 'The requested order status transition is invalid.';
     case 'INVALID_PAYMENT_STATUS':
@@ -304,7 +304,7 @@ function humanizeErrorCode(code: string) {
     case 'MISSING_IDEMPOTENCY_KEY':
       return 'Não foi possível concluir a solicitação agora. Tente novamente.';
     case 'MISSING_ORDER_ACCESS_TOKEN':
-      return 'Abra este pedido pelo link que você recebeu para acompanhar as atualizações.';
+      return 'Não conseguimos localizar seu pedido. Verifique o link e tente novamente.';
     case 'PIX_PAYMENT_CREATION_FAILED':
       return 'Não foi possível gerar o Pix agora. Tente novamente em instantes.';
     case 'PIX_PAYMENT_DATA_MISSING':

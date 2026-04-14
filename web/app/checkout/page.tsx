@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ClipboardList, LoaderCircle, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { ClipboardList, LoaderCircle, ShieldCheck, ShoppingBag } from 'lucide-react';
 import type { CreateOrderRequest } from '@/lib/contracts';
 import { useCart } from '@/contexts/CartContext';
 import { useStorefront } from '@/contexts/StorefrontContext';
-import { SiteFooter, SiteHeader } from '@/components/site/SiteChrome';
+import { AppFooter, AppHeader } from '@/components/site/SiteChrome';
 import {
   clearPendingOrderAttempt,
   createPublicOrder,
@@ -104,21 +104,15 @@ export default function CheckoutPage() {
 
   return (
     <>
-      <SiteHeader fallbackMenuHref={restaurant?.slug ? `/${restaurant.slug}` : '/'} />
-      <main className="page-shell pt-32">
+      <AppHeader
+        backHref={restaurant?.slug ? `/${restaurant.slug}` : '/'}
+        backLabel="Voltar ao cardápio"
+      />
+      <main className="page-shell pt-10">
         <section className="section-shell min-h-screen pb-28 lg:pb-0">
           <div className="content-shell">
-            <Link
-              href={restaurant?.slug ? `/${restaurant.slug}` : '/'}
-              className="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
-              style={{ color: 'rgba(53, 39, 34, 0.68)' }}
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar ao cardápio
-            </Link>
-
             {items.length === 0 ? (
-              <div className="soft-card mt-8 rounded-[2rem] p-10 text-center">
+              <div className="soft-card rounded-[2rem] p-10 text-center">
                 <h1 className="text-[3rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
                   Seu carrinho está vazio.
                 </h1>
@@ -132,7 +126,7 @@ export default function CheckoutPage() {
                 ) : null}
               </div>
             ) : (
-              <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.45fr)] lg:items-start">
+              <div className="grid gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,0.45fr)] lg:items-start">
                 <div className="soft-card rounded-[2rem] p-7 sm:p-9">
                   <span className="section-kicker">Checkout</span>
                   <h1
@@ -305,7 +299,7 @@ export default function CheckoutPage() {
           </div>
         </section>
       </main>
-      <SiteFooter />
+      <AppFooter />
     </>
   );
 }

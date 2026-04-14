@@ -11,7 +11,12 @@ import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 
-export default function LoginScreen() {
+interface LoginScreenProps {
+  accessError?: string | null;
+  onClearAccessError?: () => void;
+}
+
+export default function LoginScreen({ accessError, onClearAccessError }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,6 +28,7 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
+    onClearAccessError?.();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
@@ -46,6 +52,7 @@ export default function LoginScreen() {
       </View>
 
       <Card style={styles.card}>
+        {accessError ? <Text style={styles.accessError}>{accessError}</Text> : null}
         <Input
           label="E-mail"
           placeholder="voce@restaurante.com"
@@ -99,6 +106,11 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: spacing.xl,
+  },
+  accessError: {
+    ...typography.caption,
+    color: colors.error,
+    marginBottom: spacing.md,
   },
   footer: {
     ...typography.caption,

@@ -1,18 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Image, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ImagePlus } from 'lucide-react-native';
 import { useRestaurant } from '../hooks/useRestaurant';
-import { api } from '../services/api';
+import { api, AdminCategory } from '../services/api';
 import { storage } from '../services/storage';
 import { AppScreen } from '../components/layout/AppScreen';
 import { Button } from '../components/ui/Button';
@@ -29,9 +20,10 @@ export default function ProductFormScreen({ route, navigation }: any) {
   const { restaurantId, loading: restaurantLoading, error: restaurantError } = useRestaurant();
   const editProduct = route.params?.product;
 
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [form, setForm] = useState({
     id: editProduct?.id,
     name: editProduct?.name || '',
@@ -44,17 +36,27 @@ export default function ProductFormScreen({ route, navigation }: any) {
   });
 
   useEffect(() => {
-    if (restaurantId) {
-      api.categories.list(restaurantId).then(({ data, error }) => {
-        if (error) {
-          Alert.alert('Erro', error.message);
-          return;
-        }
-
-        setCategories(data || []);
-      });
+    if (!restaurantId) {
+      setCategoriesLoading(false);
+      return;
     }
+
+    setCategoriesLoading(true);
+    api.categories.list(restaurantId).then(({ data, error }) => {
+      if (error) {
+        Alert.alert('Erro', error.message);
+      } else {
+        setCategories(data || []);
+      }
+
+      setCategoriesLoading(false);
+    });
   }, [restaurantId]);
+
+  const activeCategories = useMemo(
+    () => categories.filter((category) => category.is_active !== false),
+    [categories],
+  );
 
   async function handlePickImage() {
     if (!restaurantId) {
@@ -97,17 +99,35 @@ export default function ProductFormScreen({ route, navigation }: any) {
       return;
     }
 
-    if (!form.name || !form.price || !form.category_id) {
+    if (!form.name.trim() || !form.price || !form.category_id) {
       Alert.alert('Campos obrigatórios', 'Preencha nome, preço e categoria.');
+      return;
+    }
+
+    const parsedPrice = Number.parseFloat(parseCurrencyInput(form.price));
+    const parsedPromoPrice = form.promo_price ? Number.parseFloat(parseCurrencyInput(form.promo_price)) : null;
+
+    if (Number.isNaN(parsedPrice)) {
+      Alert.alert('Preço inválido', 'Informe um valor válido para o preço do produto.');
+      return;
+    }
+
+    if (parsedPromoPrice !== null && Number.isNaN(parsedPromoPrice)) {
+      Alert.alert('Preço promocional inválido', 'Informe um valor válido ou deixe o campo em branco.');
       return;
     }
 
     setLoading(true);
     const { error } = await api.products.upsert({
-      ...form,
+      id: form.id,
       restaurant_id: restaurantId,
-      price: parseFloat(parseCurrencyInput(form.price)),
-      promo_price: form.promo_price ? parseFloat(parseCurrencyInput(form.promo_price)) : null,
+      category_id: form.category_id,
+      name: form.name.trim(),
+      description: form.description.trim(),
+      price: parsedPrice,
+      promo_price: parsedPromoPrice,
+      image_url: form.image_url || null,
+      is_available: form.is_available,
     });
 
     if (error) {
@@ -126,7 +146,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
       <PageHeader
         eyebrow="Catálogo"
         title={editProduct ? 'Editar produto' : 'Novo produto'}
-        subtitle="Cadastre os pratos do dia, suba a imagem e deixe a disponibilidade pronta para o site."
+        subtitle="Cadastre pratos, ajuste o preço e decida se o item já deve entrar na vitrine pública."
       />
 
       <TouchableOpacity style={styles.imageCard} onPress={handlePickImage} activeOpacity={0.88}>
@@ -136,7 +156,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
           <View style={styles.imagePlaceholder}>
             <ImagePlus size={28} color={colors.primary} />
             <Text style={styles.imageTitle}>Selecionar imagem</Text>
-            <Text style={styles.imageDescription}>A foto será enviada ao Supabase Storage e salva no produto.</Text>
+            <Text style={styles.imageDescription}>A foto será enviada ao Supabase Storage e vinculada ao produto.</Text>
           </View>
         )}
 
@@ -186,30 +206,34 @@ export default function ProductFormScreen({ route, navigation }: any) {
           </View>
         </View>
 
-        <Text style={styles.fieldLabel}>Categoria</Text>
-        <View style={styles.chipWrap}>
-          {categories.map((category) => {
-            const selected = form.category_id === category.id;
+        <Text style={styles.fieldLabel}>Categoria ativa</Text>
+        {categoriesLoading ? (
+          <ActivityIndicator color={colors.primary} style={styles.categoriesLoading} />
+        ) : activeCategories.length === 0 ? (
+          <Text style={styles.helperText}>Crie ou ative uma categoria antes de cadastrar um produto.</Text>
+        ) : (
+          <View style={styles.chipWrap}>
+            {activeCategories.map((category) => {
+              const selected = form.category_id === category.id;
 
-            return (
-              <TouchableOpacity
-                key={category.id}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => setForm((current) => ({ ...current, category_id: category.id }))}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{category.name}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+              return (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[styles.chip, selected && styles.chipSelected]}
+                  onPress={() => setForm((current) => ({ ...current, category_id: category.id }))}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{category.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
 
         <View style={styles.switchRow}>
           <View style={styles.flex}>
             <Text style={styles.fieldLabel}>Disponível no site</Text>
-            <Text style={styles.switchDescription}>
-              Quando ativo, o prato pode ser exibido para pedidos online.
-            </Text>
+            <Text style={styles.switchDescription}>Quando ativo, o prato pode aparecer imediatamente no storefront.</Text>
           </View>
           <Switch
             value={form.is_available}
@@ -223,7 +247,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
           title={loading ? 'Salvando...' : 'Salvar produto'}
           onPress={handleSave}
           loading={loading}
-          disabled={restaurantLoading || uploading}
+          disabled={restaurantLoading || uploading || categoriesLoading || activeCategories.length === 0}
         />
       </Card>
     </AppScreen>
@@ -292,6 +316,13 @@ const styles = StyleSheet.create({
     color: colors.darkText,
     fontWeight: '600',
     marginBottom: spacing.sm,
+  },
+  categoriesLoading: {
+    marginBottom: spacing.lg,
+  },
+  helperText: {
+    ...typography.caption,
+    marginBottom: spacing.lg,
   },
   chipWrap: {
     flexDirection: 'row',
