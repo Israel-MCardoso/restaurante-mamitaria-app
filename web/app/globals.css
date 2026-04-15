@@ -1,6 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+/*
+ * @source tells Tailwind v4 which directories to scan for utility classes.
+ * Paths are relative to this file (web/app/globals.css):
+ *   ../components  →  web/components  (all landing + storefront components)
+ *   .              →  web/app          (pages, layouts)
+ */
+@source "../components";
+@source ".";
 
 /*
  * globals.css
@@ -23,6 +30,15 @@ html {
 }
 
 body {
+  /*
+   * Next.js `next/font` sets --font-cormorant and --font-manrope on <body>
+   * via CSS class names. landing.css defines --font-display / --font-body
+   * on :root referencing those vars — but :root cannot inherit from body.
+   * Re-binding here on body ensures every descendant resolves the correct font.
+   */
+  --font-display: var(--font-cormorant), "Cormorant Garamond", serif;
+  --font-body: var(--font-manrope), "Manrope", sans-serif;
+
   margin: 0;
   min-height: 100vh;
   color: var(--ink, #352722);
