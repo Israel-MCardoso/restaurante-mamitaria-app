@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MessageCircle, ShoppingBag } from 'lucide-react';
+import { MessageCircle, ShoppingCart } from 'lucide-react';
 import { BrandLogo } from '@/components/site/BrandLogo';
 import { getWhatsAppUrl } from './siteConfig';
 
@@ -44,22 +44,22 @@ export function Header({ storefrontHref }: { storefrontHref: string }) {
               href={getWhatsAppUrl()}
               target="_blank"
               rel="noreferrer"
-              className="premium-button hidden w-auto shrink-0 px-3 py-2.5 text-[0.9rem] lg:inline-flex xl:px-6 xl:py-3"
+              className="premium-button hidden w-auto shrink-0 px-3 py-2.5 text-[0.9rem] md:inline-flex xl:px-6 xl:py-3"
               style={{ boxShadow: '0 12px 30px rgba(107, 62, 46, 0.16)', width: 'auto' }}
               aria-label="Pedir no WhatsApp"
             >
               <MessageCircle className="h-4 w-4" />
               <span className="hidden xl:inline">Pedir no WhatsApp</span>
-              <span className="hidden lg:inline xl:hidden">WhatsApp</span>
+              <span className="hidden md:inline xl:hidden">WhatsApp</span>
             </a>
             <Link
               href={storefrontHref}
               className="premium-button relative w-auto shrink-0 px-3 py-2.5 text-[0.9rem] sm:px-5 sm:py-3"
               style={{ boxShadow: '0 12px 30px rgba(107, 62, 46, 0.16)', width: 'auto' }}
-              aria-label="Abrir cardápio"
+              aria-label="Abrir carrinho"
             >
-              <ShoppingBag className="h-4 w-4" />
-              <span className="hidden md:inline">Cardápio</span>
+              <ShoppingCart className="h-4 w-4" />
+              <span className="hidden md:inline">Carrinho</span>
             </Link>
           </div>
         </div>

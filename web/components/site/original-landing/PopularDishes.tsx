@@ -66,6 +66,7 @@ export function PopularDishes({
                     featured ? ' lg:col-span-2 lg:grid lg:grid-cols-[1.12fr_0.88fr]' : ''
                   }`}
                 >
+                  {/* ── Image ───────────────────────────────────────────── */}
                   <div
                     className={`food-image-frame relative block w-full${
                       featured ? ' min-h-[500px]' : ' h-[360px]'
@@ -83,17 +84,33 @@ export function PopularDishes({
                       decoding="async"
                       className="food-image"
                     />
+
+                    {/* Overlay bottom row */}
                     <div className="absolute inset-x-0 bottom-0 z-[3] p-6 sm:p-7">
                       <div className="flex flex-wrap items-end justify-between gap-3">
-                        <span
-                          className="inline-flex rounded-full px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.24em]"
-                          style={{
-                            backgroundColor: 'rgba(18, 12, 10, 0.46)',
-                            color: 'rgba(255,255,255,0.84)',
-                          }}
-                        >
-                          {featured ? 'Assinatura da casa' : 'Prato do dia'}
-                        </span>
+
+                        {featured ? (
+                          /* Featured: dark badge "Assinatura da casa" */
+                          <span
+                            className="inline-flex rounded-full px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.24em]"
+                            style={{
+                              backgroundColor: 'rgba(18, 12, 10, 0.46)',
+                              color: 'rgba(255,255,255,0.84)',
+                            }}
+                          >
+                            Assinatura da casa
+                          </span>
+                        ) : (
+                          /* Non-featured: category name as plain text (matches original ingredient text style) */
+                          <span
+                            className="text-[0.65rem] font-semibold uppercase tracking-[0.22em]"
+                            style={{ color: 'rgba(255,255,255,0.78)' }}
+                          >
+                            {item.categoryName ?? 'Prato do dia'}
+                          </span>
+                        )}
+
+                        {/* Price badge */}
                         <span
                           className="rounded-full px-4 py-2 text-sm font-semibold"
                           style={{
@@ -108,12 +125,14 @@ export function PopularDishes({
                     </div>
                   </div>
 
+                  {/* ── Text area ───────────────────────────────────────── */}
                   <div
                     className={`flex flex-col justify-between${
                       featured ? ' p-8 sm:p-10 lg:p-12' : ' p-7 sm:p-8'
                     }`}
                   >
                     <div>
+                      {/* Featured badge */}
                       {featured ? (
                         <span
                           className="inline-flex rounded-full px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em]"
@@ -123,7 +142,8 @@ export function PopularDishes({
                         </span>
                       ) : null}
 
-                      {item.categoryName ? (
+                      {/* Category kicker (featured only, above title) */}
+                      {featured && item.categoryName ? (
                         <p
                           className="mt-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em]"
                           style={{ color: 'var(--brand)' }}
@@ -132,14 +152,17 @@ export function PopularDishes({
                         </p>
                       ) : null}
 
+                      {/* Title */}
                       <h3
                         className={`leading-none tracking-[-0.045em]${
-                          featured ? ' mt-6 text-[3rem]' : ' text-[2.15rem]'
+                          featured ? ' mt-6 text-[3rem]' : ' mt-1 text-[2.15rem]'
                         }`}
                         style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
                       >
                         {item.name}
                       </h3>
+
+                      {/* Description */}
                       <p
                         className={`mt-4 max-w-xl${featured ? ' text-[1.08rem] leading-8' : ' text-base leading-7'}`}
                         style={{ color: 'var(--ink-muted)' }}
@@ -147,8 +170,25 @@ export function PopularDishes({
                         {item.description ||
                           'Receita preparada com atenção ao ponto, ao sabor e à experiência de entrega.'}
                       </p>
+
+                      {/* Tag pills — category name as pill (matches original ingredient tags visual) */}
+                      {item.categoryName ? (
+                        <div className="mt-5 flex flex-wrap gap-2">
+                          <span
+                            className="inline-flex rounded-full border px-3.5 py-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.2em]"
+                            style={{
+                              borderColor: 'rgba(107, 62, 46, 0.2)',
+                              color: 'var(--brand)',
+                              backgroundColor: 'rgba(107, 62, 46, 0.05)',
+                            }}
+                          >
+                            {item.categoryName}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
 
+                    {/* Buttons */}
                     <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex flex-col gap-3 sm:flex-row">
                         <Link href={storefrontHref} className="premium-button px-6 py-3 sm:w-auto">
