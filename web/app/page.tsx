@@ -25,7 +25,6 @@ type LandingProduct = {
   promo_price?: number | null;
   image_url?: string | null;
   is_available?: boolean | null;
-  is_featured?: boolean | null;
 };
 
 async function getLandingData() {
@@ -85,9 +84,8 @@ async function getLandingData() {
 
   const productsResponse = await supabase
     .from('products')
-    .select('id, category_id, name, description, price, promo_price, image_url, is_available, is_featured')
+    .select('id, category_id, name, description, price, promo_price, image_url, is_available')
     .in('category_id', categoryIds)
-    .order('is_featured', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
     .limit(9);
 
