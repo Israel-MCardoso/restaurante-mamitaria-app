@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MessageCircle, ShoppingBag } from 'lucide-react';
+import { MessageCircle, ShoppingCart } from 'lucide-react';
 import { getWhatsAppUrl, formatCurrency } from './siteConfig';
 
 type PreviewItem = {
@@ -90,24 +90,44 @@ export function PopularDishes({
                       <div className="flex flex-wrap items-end justify-between gap-3">
 
                         {featured ? (
-                          /* Featured: dark badge "Assinatura da casa" */
-                          <span
-                            className="inline-flex rounded-full px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.24em]"
-                            style={{
-                              backgroundColor: 'rgba(18, 12, 10, 0.46)',
-                              color: 'rgba(255,255,255,0.84)',
-                            }}
-                          >
-                            Assinatura da casa
-                          </span>
+                          /* Featured: badge "Assinatura da casa" + ingredient excerpt below */
+                          <div className="flex flex-col gap-1.5">
+                            <span
+                              className="inline-flex self-start rounded-full px-3 py-1.5 text-[0.68rem] font-semibold uppercase tracking-[0.24em]"
+                              style={{
+                                backgroundColor: 'rgba(18, 12, 10, 0.46)',
+                                color: 'rgba(255,255,255,0.84)',
+                              }}
+                            >
+                              Assinatura da casa
+                            </span>
+                            {item.description ? (
+                              <span
+                                className="text-[0.67rem] font-semibold uppercase tracking-[0.18em]"
+                                style={{ color: 'rgba(255,255,255,0.72)' }}
+                              >
+                                {item.description.slice(0, 40).toUpperCase()}
+                              </span>
+                            ) : null}
+                          </div>
                         ) : (
-                          /* Non-featured: category name as plain text (matches original ingredient text style) */
-                          <span
-                            className="text-[0.65rem] font-semibold uppercase tracking-[0.22em]"
-                            style={{ color: 'rgba(255,255,255,0.78)' }}
-                          >
-                            {item.categoryName ?? 'Prato do dia'}
-                          </span>
+                          /* Non-featured: "PRATO DO DIA" label + ingredient excerpt */
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className="text-[0.62rem] font-semibold uppercase tracking-[0.26em]"
+                              style={{ color: 'rgba(255,255,255,0.62)' }}
+                            >
+                              Prato do dia
+                            </span>
+                            {item.description ? (
+                              <span
+                                className="text-[0.67rem] font-semibold uppercase tracking-[0.16em]"
+                                style={{ color: 'rgba(255,255,255,0.84)' }}
+                              >
+                                {item.description.slice(0, 38).toUpperCase()}
+                              </span>
+                            ) : null}
+                          </div>
                         )}
 
                         {/* Price badge */}
@@ -192,8 +212,8 @@ export function PopularDishes({
                     <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex flex-col gap-3 sm:flex-row">
                         <Link href={storefrontHref} className="premium-button px-6 py-3 sm:w-auto">
-                          <ShoppingBag className="h-4 w-4" />
-                          {featured ? 'Ver cardápio completo' : 'Ver no cardápio'}
+                          <ShoppingCart className="h-4 w-4" />
+                          Adicionar ao carrinho
                         </Link>
                         <a
                           href={getWhatsAppUrl(`Olá! Gostaria de pedir: ${item.name}`)}

@@ -98,7 +98,7 @@ async function getLandingData() {
     ? []
     : (productsData ?? [])
         .filter((product) => product.is_available !== false)
-        .slice(0, 3)
+        .slice(0, 4)
         .map((product) => ({
           id: product.id,
           name: product.name,
