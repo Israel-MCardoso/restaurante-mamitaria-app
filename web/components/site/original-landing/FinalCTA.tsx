@@ -24,7 +24,7 @@ export function FinalCTA({ storefrontHref }: { storefrontHref: string }) {
           >
             Seu próximo almoço pode sair daqui em minutos.
           </h2>
-          <p className="mx-auto mt-7 max-w-2xl text-[1.1rem] leading-8 text-white/74">
+          <p className="mx-auto mt-7 max-w-2xl text-[1.1rem] leading-8 text-white/[74%]">
             Monte seu pedido pelo cardápio e receba uma marmita quentinha, bem montada e pronta para transformar a
             pausa do dia em um momento melhor.
           </p>
@@ -36,7 +36,7 @@ export function FinalCTA({ storefrontHref }: { storefrontHref: string }) {
             </Link>
           </div>
 
-          <p className="mt-6 text-sm uppercase tracking-[0.22em] text-white/46">
+          <p className="mt-6 text-sm uppercase tracking-[0.22em] text-white/[46%]">
             Atendimento complementar pelo WhatsApp
           </p>
         </div>

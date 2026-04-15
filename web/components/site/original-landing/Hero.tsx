@@ -40,13 +40,13 @@ export function Hero({ storefrontHref }: { storefrontHref: string }) {
                 border: '1px solid rgba(255, 255, 255, 0.16)',
               }}
             >
-              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-white/88">
+              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-white/[88%]">
                 Almoço caseiro entregue no mesmo dia
               </span>
             </div>
 
             <div className="hero-reveal hero-reveal-delay mt-8 max-w-4xl">
-              <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/58">
+              <span className="mb-4 block text-sm font-semibold uppercase tracking-[0.28em] text-white/[58%]">
                 Sabor Mineiro
               </span>
               <h2
@@ -78,29 +78,29 @@ export function Hero({ storefrontHref }: { storefrontHref: string }) {
               </a>
             </div>
 
-            <div className="hero-reveal hero-reveal-delay mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/14 pt-6 text-sm text-white/72">
+            <div className="hero-reveal hero-reveal-delay mt-12 flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-white/[14%] pt-6 text-sm text-white/[72%]">
               <span>4,9 de média com mais de 2.500 pedidos avaliados</span>
-              <span className="hidden h-1.5 w-1.5 rounded-full bg-white/28 sm:block" />
+              <span className="hidden h-1.5 w-1.5 rounded-full bg-white/[28%] sm:block" />
               <span>Atendimento direto pelo WhatsApp oficial da casa</span>
             </div>
           </div>
 
-          <div className="hidden gap-6 text-white/84 lg:grid">
-            <div className="border-t border-white/14 pt-5">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Cozinha do dia</p>
-              <p className="mt-3 text-lg leading-8 text-white/82">
+          <div className="hidden gap-6 text-white/[84%] lg:grid">
+            <div className="border-t border-white/[14%] pt-5">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/[48%]">Cozinha do dia</p>
+              <p className="mt-3 text-lg leading-8 text-white/[82%]">
                 Pratos montados em pequenos lotes para manter textura, aroma e temperatura até a entrega.
               </p>
             </div>
-            <div className="border-t border-white/14 pt-5">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Receita de casa</p>
-              <p className="mt-3 text-lg leading-8 text-white/82">
+            <div className="border-t border-white/[14%] pt-5">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/[48%]">Receita de casa</p>
+              <p className="mt-3 text-lg leading-8 text-white/[82%]">
                 Temperos feitos do zero, sem atalhos industriais, com repertório de mesa mineira tradicional.
               </p>
             </div>
-            <div className="border-t border-white/14 pt-5">
-              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/48">Atendimento</p>
-              <p className="mt-3 text-lg leading-8 text-white/82">
+            <div className="border-t border-white/[14%] pt-5">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-white/[48%]">Atendimento</p>
+              <p className="mt-3 text-lg leading-8 text-white/[82%]">
                 Pedido pelo WhatsApp com resposta rápida para almoço prático, elegante e sem surpresa.
               </p>
             </div>
@@ -109,7 +109,7 @@ export function Hero({ storefrontHref }: { storefrontHref: string }) {
       </div>
 
       <div className="absolute bottom-8 left-1/2 z-10 hidden -translate-x-1/2 md:block">
-        <div className="flex h-12 w-7 items-start justify-center rounded-full border border-white/28 p-2">
+        <div className="flex h-12 w-7 items-start justify-center rounded-full border border-white/[28%] p-2">
           <div className="h-2.5 w-1 rounded-full bg-white/80" />
         </div>
       </div>
