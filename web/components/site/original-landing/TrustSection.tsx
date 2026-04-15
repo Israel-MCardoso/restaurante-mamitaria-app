@@ -23,17 +23,17 @@ export function TrustSection() {
 
           <div className="grid gap-6 md:grid-cols-3 md:gap-8">
             {stats.map((stat) => (
-              <div key={stat.label} className="border-t border-white/14 pt-5 text-white">
+              <div key={stat.label} className="border-t border-white/[14%] pt-5 text-white">
                 <div
                   className="text-[clamp(3rem,5vw,4.5rem)] font-semibold leading-none tracking-[-0.05em]"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
                   {stat.number}
                 </div>
-                <p className="mt-4 text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/52">
+                <p className="mt-4 text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/[52%]">
                   {stat.label}
                 </p>
-                <p className="mt-4 max-w-xs text-base leading-7 text-white/72">{stat.detail}</p>
+                <p className="mt-4 max-w-xs text-base leading-7 text-white/[72%]">{stat.detail}</p>
               </div>
             ))}
           </div>
