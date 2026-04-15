@@ -1,6 +1,5 @@
 import { getSupabaseClient } from '@/lib/supabase';
 import { MarketingHomePage } from '@/components/site/MarketingHomePage';
-import { MarketingHeader, SiteFooter } from '@/components/site/SiteChrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -122,14 +121,10 @@ export default async function HomePage() {
   const landingData = await getLandingData();
 
   return (
-    <>
-      <MarketingHeader storefrontHref={landingData.storefrontHref ?? '/checkout'} />
-      <MarketingHomePage
-        storefrontHref={landingData.storefrontHref}
-        restaurantName={landingData.restaurantName}
-        previewItems={landingData.previewItems}
-      />
-      <SiteFooter storefrontHref={landingData.storefrontHref ?? '/'} />
-    </>
+    <MarketingHomePage
+      storefrontHref={landingData.storefrontHref}
+      restaurantName={landingData.restaurantName}
+      previewItems={landingData.previewItems}
+    />
   );
 }

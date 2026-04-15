@@ -1,0 +1,296 @@
+/*
+ * landing.css
+ * CSS completo da landing original — copiado de:
+ * C:\Users\israe\Desktop\landing page restaurante\src\styles\theme.css
+ *
+ * NÃO modificar este arquivo.
+ * NÃO adaptar, simplificar ou reorganizar.
+ * É a fonte única de verdade para o visual da landing.
+ */
+
+/* ─── Custom properties ──────────────────────────────────────────────────── */
+
+:root {
+  --font-size: 16px;
+  --font-display: var(--font-cormorant), "Cormorant Garamond", serif;
+  --font-body: var(--font-manrope), "Manrope", sans-serif;
+  --page-bg: #f6f0e8;
+  --page-bg-soft: #fbf7f1;
+  --surface: rgba(255, 250, 244, 0.88);
+  --surface-solid: #fffaf4;
+  --surface-dark: #4a2e23;
+  --ink-strong: #241916;
+  --ink: #352722;
+  --ink-muted: #6a5b53;
+  --brand: #6b3e2e;
+  --gold: #c8873f;
+  --gold-soft: #ead9c0;
+  --sage: #6f8f72;
+  --line: rgba(75, 46, 35, 0.12);
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+
+::selection {
+  background: rgba(200, 135, 63, 0.22);
+  color: var(--ink-strong);
+}
+
+:where(a, button, input, textarea):focus-visible {
+  outline: 2px solid rgba(200, 135, 63, 0.72);
+  outline-offset: 3px;
+}
+
+/* ─── Layout ──────────────────────────────────────────────────────────────── */
+
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: clip;
+}
+
+.page-shell::before {
+  content: "";
+  position: fixed;
+  inset: auto -20vw 12vh auto;
+  width: 42vw;
+  height: 42vw;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(111, 143, 114, 0.11), transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.content-shell {
+  width: min(1280px, calc(100% - clamp(1.5rem, 4vw, 4rem)));
+  margin-inline: auto;
+}
+
+.section-shell {
+  position: relative;
+  padding-block: clamp(5.5rem, 10vw, 9rem);
+}
+
+.section-divider {
+  position: relative;
+}
+
+.section-divider::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: min(1280px, calc(100% - clamp(1.5rem, 4vw, 4rem)));
+  height: 1px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, var(--line) 14%, var(--line) 86%, transparent);
+}
+
+/* ─── Section typography helpers ─────────────────────────────────────────── */
+
+.section-intro {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: clamp(3rem, 6vw, 5rem);
+}
+
+.section-kicker {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(53, 39, 34, 0.62);
+}
+
+.section-title {
+  max-width: 14ch;
+  margin: 0;
+  color: var(--ink-strong);
+  font-family: var(--font-display);
+  font-size: clamp(3rem, 5vw, 4.6rem);
+  font-weight: 600;
+  line-height: 0.98;
+  letter-spacing: -0.04em;
+}
+
+.section-copy {
+  max-width: 42rem;
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: clamp(1rem, 1.35vw, 1.2rem);
+  line-height: 1.8;
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+
+.premium-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 1.05rem 1.65rem;
+  background: linear-gradient(135deg, #d7964f 0%, #ba7634 100%);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 0.96rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow: 0 18px 40px rgba(107, 62, 46, 0.18);
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    filter 220ms ease,
+    border-color 220ms ease;
+}
+
+.premium-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 22px 50px rgba(107, 62, 46, 0.24);
+  filter: saturate(1.03);
+}
+
+.premium-button--ghost {
+  background: rgba(255, 250, 244, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: none;
+}
+
+.premium-button--ghost:hover {
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+/* ─── Header surface ──────────────────────────────────────────────────────── */
+
+.premium-surface {
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  box-shadow:
+    0 24px 60px rgba(80, 55, 43, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(18px);
+}
+
+/* ─── Cards ───────────────────────────────────────────────────────────────── */
+
+.soft-card {
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.96) 0%, rgba(255, 248, 241, 0.78) 100%);
+  box-shadow: 0 22px 48px rgba(92, 66, 53, 0.08);
+}
+
+/* ─── Decorative ──────────────────────────────────────────────────────────── */
+
+.eyebrow-dot::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--gold);
+  box-shadow: 0 0 0 0.35rem rgba(200, 135, 63, 0.12);
+}
+
+.hero-orb {
+  animation: heroFloat 14s ease-in-out infinite;
+}
+
+.hero-reveal {
+  animation: heroReveal 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-reveal-delay {
+  animation-delay: 120ms;
+}
+
+/* ─── Image treatments ────────────────────────────────────────────────────── */
+
+.image-wash::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(14, 9, 7, 0.02) 0%, rgba(14, 9, 7, 0.34) 100%);
+}
+
+.food-image-frame {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.food-image-frame::before {
+  content: "";
+  position: absolute;
+  inset: 1.1rem;
+  border-radius: 1.6rem;
+  border: 1px solid rgba(255, 248, 240, 0.34);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.food-image-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(255, 217, 168, 0.24), transparent 32%),
+    linear-gradient(180deg, rgba(12, 8, 6, 0.02) 0%, rgba(12, 8, 6, 0.42) 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.food-image {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  filter: saturate(1.12) contrast(1.04) brightness(1.02);
+  transform: scale(1.01);
+  transition: transform 700ms ease, filter 700ms ease;
+}
+
+.food-image-frame:hover .food-image {
+  transform: scale(1.06);
+  filter: saturate(1.18) contrast(1.06) brightness(1.04);
+}
+
+/* ─── Keyframes ───────────────────────────────────────────────────────────── */
+
+@keyframes heroReveal {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes heroFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.04);
+  }
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .section-title {
+    max-width: 12ch;
+  }
+
+  .section-copy {
+    line-height: 1.7;
+  }
+
+  .premium-button {
+    width: 100%;
+  }
+}

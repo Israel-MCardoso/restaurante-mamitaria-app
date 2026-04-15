@@ -1,33 +1,27 @@
+'use client';
+
+import './landing.css';
+
 import Link from 'next/link';
 import {
   ArrowRight,
   ChefHat,
-  Clock,
   Heart,
+  Instagram,
   Leaf,
+  Mail,
   MapPin,
   MessageCircle,
   Phone,
   ShoppingBag,
   Star,
   Truck,
+  Clock,
 } from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type PreviewItem = {
-  id: string;
-  name: string;
-  description: string;
-  imageUrl: string | null;
-  price: number;
-  categoryName: string | null;
-};
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const WHATSAPP_NUMBER = '5515991442274';
+// ─── Site config (mirrors siteConfig.ts from original landing) ────────────
 const PHONE_DISPLAY = '+55 15 99144-2274';
+const WHATSAPP_NUMBER = '5515991442274';
 const ADDRESS = 'R. Gustavo Teixeira, 42 - Vila Independência';
 const MAPS_URL = 'https://maps.app.goo.gl/B2EL1dMpC4auAbj96';
 
@@ -39,9 +33,18 @@ function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 }
 
-// ─── Static data ──────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────
+type PreviewItem = {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+  price: number;
+  categoryName: string | null;
+};
 
-const trustStats = [
+// ─── Static data (mirrors original landing components) ────────────────────
+const stats = [
   { number: '2.500+', label: 'clientes satisfeitos', detail: 'Pedidos recorrentes em ritmo de almoço de confiança.' },
   { number: '4,9', label: 'avaliação média', detail: 'Feedback constante sobre sabor, temperatura e atendimento.' },
   { number: '30 min', label: 'entrega média', detail: 'Cobertura ágil para quem precisa comer bem sem perder tempo.' },
@@ -110,8 +113,78 @@ const infos = [
   },
 ];
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── BrandLogo (copied from original BrandLogo.tsx) ──────────────────────
+function BrandLogo({ compact = false }: { compact?: boolean }) {
+  const iconSize = compact ? 34 : 52;
 
+  return (
+    <div className="flex items-center gap-2.5 sm:gap-4" aria-label="Família Mineira">
+      <svg
+        width={iconSize}
+        height={iconSize}
+        viewBox="0 0 72 72"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className="shrink-0"
+      >
+        <path
+          d="M17 28C17 20.8203 22.8203 15 30 15H42C49.1797 15 55 20.8203 55 28V44C55 51.1797 49.1797 57 42 57H30C22.8203 57 17 51.1797 17 44V28Z"
+          fill="#9C7047"
+          stroke="#C98B64"
+          strokeWidth="2.4"
+        />
+        <path
+          d="M17 31C20.5 29.2 23.8 28.3 27.2 28.3H44.8C48.2 28.3 51.5 29.2 55 31"
+          stroke="#E6B08B"
+          strokeWidth="2.6"
+          strokeLinecap="round"
+        />
+        <path
+          d="M27 20.5C28.8 18.9 31.1 18 33.5 18H38.5C40.9 18 43.2 18.9 45 20.5L48 23.2H24L27 20.5Z"
+          fill="#8C623C"
+          stroke="#C98B64"
+          strokeWidth="2.2"
+        />
+        <path d="M12 28.8C12 24.9 15.1 21.8 19 21.8H20.8V35.5H19C15.1 35.5 12 32.4 12 28.8Z" fill="#9C7047" stroke="#C98B64" strokeWidth="2.2" />
+        <path d="M60 28.8C60 24.9 56.9 21.8 53 21.8H51.2V35.5H53C56.9 35.5 60 32.4 60 28.8Z" fill="#9C7047" stroke="#C98B64" strokeWidth="2.2" />
+        <path d="M34 10C34 10 31.7 6.8 34 3.8" stroke="#C98B64" strokeWidth="2.4" strokeLinecap="round" />
+        <path d="M41 9C41 9 38.7 5.8 41 2.8" stroke="#C98B64" strokeWidth="2.4" strokeLinecap="round" />
+        <path d="M48 11C48 11 45.7 7.8 48 4.8" stroke="#C98B64" strokeWidth="2.4" strokeLinecap="round" />
+        <path
+          d="M20.2 11.4C20.2 8.5 23.4 6.7 25.9 8.2C27.1 8.9 27.8 10.1 27.8 11.4C27.8 13.4 25.8 15.5 22.9 17.7C20 15.5 20.2 13.4 20.2 11.4Z"
+          fill="#C98B64"
+        />
+        <path
+          d="M52.2 11.4C52.2 8.5 55.4 6.7 57.9 8.2C59.1 8.9 59.8 10.1 59.8 11.4C59.8 13.4 57.8 15.5 54.9 17.7C52 15.5 52.2 13.4 52.2 11.4Z"
+          fill="#88A35B"
+        />
+      </svg>
+
+      <div className="leading-none">
+        <div
+          className={`${compact ? 'text-[1.45rem] sm:text-[2rem]' : 'text-[2.2rem] sm:text-[2.5rem]'} tracking-[-0.06em]`}
+          style={{ fontFamily: 'var(--font-display)', color: '#88A35B', lineHeight: 0.82 }}
+        >
+          Família
+        </div>
+        <div
+          className={`${compact ? 'text-[1.08rem] sm:text-[1.5rem]' : 'text-[1.6rem] sm:text-[1.85rem]'} tracking-[-0.055em]`}
+          style={{ fontFamily: 'var(--font-display)', color: '#C98B64', lineHeight: 0.84 }}
+        >
+          Mineira
+        </div>
+        <div
+          className={`${compact ? 'mt-0.5 text-[0.38rem]' : 'mt-1 text-[0.52rem]'} uppercase tracking-[0.18em] sm:text-[0.58rem]`}
+          style={{ color: 'rgba(80, 64, 52, 0.76)' }}
+        >
+          Marmitaria e Doceria
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────
 export function MarketingHomePage({
   storefrontHref,
   restaurantName: _restaurantName,
@@ -124,9 +197,71 @@ export function MarketingHomePage({
   const primaryHref = storefrontHref ?? '/checkout';
 
   return (
-    <main className="page-shell">
+    <div className="page-shell">
 
-      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      {/* ── Header (copied from original Header.tsx) ──────────────────── */}
+      <header className="fixed inset-x-0 top-0 z-50 px-4 pt-4 sm:px-6 lg:px-8">
+        <div className="content-shell">
+          <div
+            className="premium-surface flex items-center justify-between gap-3 rounded-[2rem] px-3 py-3 sm:px-6 sm:py-4"
+            style={{ borderColor: 'rgba(255, 255, 255, 0.68)' }}
+          >
+            <Link href="/" className="min-w-0 flex-1 md:flex-none">
+              <BrandLogo compact />
+            </Link>
+
+            <nav className="hidden items-center gap-8 md:flex">
+              <Link
+                href={primaryHref}
+                className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
+                style={{ color: 'rgba(53, 39, 34, 0.74)' }}
+              >
+                Cardápio
+              </Link>
+              <Link
+                href="/#sobre"
+                className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
+                style={{ color: 'rgba(53, 39, 34, 0.74)' }}
+              >
+                Sobre nós
+              </Link>
+              <Link
+                href="/#depoimentos"
+                className="text-[0.8rem] font-semibold uppercase tracking-[0.22em] transition-colors hover:text-[var(--brand)]"
+                style={{ color: 'rgba(53, 39, 34, 0.74)' }}
+              >
+                Avaliações
+              </Link>
+            </nav>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <a
+                href={getWhatsAppUrl()}
+                target="_blank"
+                rel="noreferrer"
+                className="premium-button hidden w-auto shrink-0 px-3 py-2.5 text-[0.9rem] lg:inline-flex xl:px-6 xl:py-3"
+                style={{ boxShadow: '0 12px 30px rgba(107, 62, 46, 0.16)', width: 'auto' }}
+                aria-label="Pedir no WhatsApp"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span className="hidden xl:inline">Pedir no WhatsApp</span>
+                <span className="hidden lg:inline xl:hidden">WhatsApp</span>
+              </a>
+              <Link
+                href={primaryHref}
+                className="premium-button relative w-auto shrink-0 px-3 py-2.5 text-[0.9rem] sm:px-5 sm:py-3"
+                style={{ boxShadow: '0 12px 30px rgba(107, 62, 46, 0.16)', width: 'auto' }}
+                aria-label="Abrir cardápio"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                <span className="hidden md:inline">Cardápio</span>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Hero (copied from original Hero.tsx) ──────────────────────── */}
       <section className="relative flex min-h-screen items-end overflow-hidden pt-32">
         <div
           className="absolute inset-0"
@@ -153,7 +288,7 @@ export function MarketingHomePage({
           style={{ backgroundColor: 'rgba(111, 143, 114, 0.18)', animationDelay: '1.5s' }}
         />
 
-        <div className="content-shell relative z-10 w-full pb-14 sm:pb-18 lg:pb-24">
+        <div className="content-shell relative z-10 w-full pb-14 sm:pb-[4.5rem] lg:pb-24">
           <div className="grid items-end gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.34fr)] lg:gap-10">
             <div className="max-w-4xl text-white">
               <div
@@ -238,7 +373,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      {/* ── Trust ─────────────────────────────────────────────────────────── */}
+      {/* ── TrustSection (copied from original TrustSection.tsx) ──────── */}
       <section className="section-shell section-divider" style={{ backgroundColor: 'var(--surface-dark)' }}>
         <div className="content-shell">
           <div className="grid gap-10 lg:grid-cols-[0.95fr_2fr] lg:gap-12">
@@ -246,16 +381,14 @@ export function MarketingHomePage({
               <span className="section-kicker" style={{ color: 'rgba(255,255,255,0.45)' }}>
                 Credibilidade construída no dia a dia
               </span>
-              <h2
-                className="mt-4 text-[clamp(2.8rem,4vw,4.4rem)] leading-[0.95] tracking-[-0.05em] text-white"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
+              <h2 className="mt-4 text-[clamp(2.8rem,4vw,4.4rem)] leading-[0.95] tracking-[-0.05em] text-white"
+                style={{ fontFamily: 'var(--font-display)' }}>
                 Presença local com padrão de casa bem servida.
               </h2>
             </div>
 
             <div className="grid gap-6 md:grid-cols-3 md:gap-8">
-              {trustStats.map((stat) => (
+              {stats.map((stat) => (
                 <div key={stat.label} className="border-t border-white/14 pt-5 text-white">
                   <div
                     className="text-[clamp(3rem,5vw,4.5rem)] font-semibold leading-none tracking-[-0.05em]"
@@ -274,7 +407,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      {/* ── Benefits ──────────────────────────────────────────────────────── */}
+      {/* ── Benefits (copied from original Benefits.tsx) ──────────────── */}
       <section className="section-shell">
         <div className="content-shell">
           <div className="section-intro lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.7fr)] lg:items-end lg:justify-between">
@@ -294,7 +427,7 @@ export function MarketingHomePage({
               return (
                 <article
                   key={benefit.title}
-                  className="flex gap-6 border-t pb-7 pt-8"
+                  className="flex gap-6 border-t pt-8 pb-7"
                   style={{ borderColor: 'var(--line)' }}
                 >
                   <span
@@ -322,18 +455,17 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      {/* ── Popular Dishes ────────────────────────────────────────────────── */}
+      {/* ── Popular Dishes (layout from ProductGrid.tsx, data from props) ─ */}
       <section
         id="pratos"
         className="section-shell section-divider overflow-hidden"
         style={{ backgroundColor: 'rgba(255, 255, 255, 0.55)' }}
       >
         <div
-          className="absolute left-1/2 top-30 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl"
-          style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)' }}
+          className="absolute left-1/2 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl"
+          style={{ top: '7.5rem', backgroundColor: 'rgba(200, 135, 63, 0.12)' }}
         />
         <div className="content-shell">
-          {/* Section intro */}
           <div className="section-intro lg:grid-cols-[minmax(0,0.9fr)_minmax(0,0.7fr)] lg:items-end lg:justify-between">
             <div>
               <span className="section-kicker">Cardápio em destaque</span>
@@ -345,7 +477,6 @@ export function MarketingHomePage({
             </p>
           </div>
 
-          {/* Empty state */}
           {previewItems.length === 0 ? (
             <div className="soft-card rounded-[2rem] p-8">
               <span className="section-kicker">Cardápio em atualização</span>
@@ -361,22 +492,21 @@ export function MarketingHomePage({
               </p>
             </div>
           ) : (
-            /* Editorial 2-column grid — mirrors ProductGrid layout from the original */
             <div className="grid gap-6 lg:grid-cols-2">
               {previewItems.map((item, index) => {
-                const isFeatured = index === 0;
+                const isFeatured = item.categoryName ? false : index === 0;
+                const featured = index === 0;
 
                 return (
                   <article
                     key={item.id}
                     className={`soft-card overflow-hidden rounded-[2rem]${
-                      isFeatured ? ' lg:col-span-2 lg:grid lg:grid-cols-[1.12fr_0.88fr]' : ''
+                      featured ? ' lg:col-span-2 lg:grid lg:grid-cols-[1.12fr_0.88fr]' : ''
                     }`}
                   >
-                    {/* Image frame with price + category overlay */}
                     <div
                       className={`food-image-frame relative block w-full${
-                        isFeatured ? ' min-h-[500px]' : ' h-[360px]'
+                        featured ? ' min-h-[500px]' : ' h-[360px]'
                       }`}
                     >
                       <img
@@ -385,13 +515,12 @@ export function MarketingHomePage({
                           'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=80'
                         }
                         alt={item.name}
-                        width={isFeatured ? 720 : 640}
-                        height={isFeatured ? 500 : 360}
+                        width={featured ? 720 : 640}
+                        height={featured ? 500 : 360}
                         loading={index === 0 ? 'eager' : 'lazy'}
                         decoding="async"
                         className="food-image"
                       />
-                      {/* Overlay: category badge + price */}
                       <div className="absolute inset-x-0 bottom-0 z-[3] p-6 sm:p-7">
                         <div className="flex flex-wrap items-end justify-between gap-3">
                           <span
@@ -401,7 +530,7 @@ export function MarketingHomePage({
                               color: 'rgba(255,255,255,0.84)',
                             }}
                           >
-                            {isFeatured ? 'Assinatura da casa' : 'Prato do dia'}
+                            {featured ? 'Assinatura da casa' : 'Prato do dia'}
                           </span>
                           <span
                             className="rounded-full px-4 py-2 text-sm font-semibold"
@@ -417,14 +546,13 @@ export function MarketingHomePage({
                       </div>
                     </div>
 
-                    {/* Content */}
                     <div
                       className={`flex flex-col justify-between${
-                        isFeatured ? ' p-8 sm:p-10 lg:p-12' : ' p-7 sm:p-8'
+                        featured ? ' p-8 sm:p-10 lg:p-12' : ' p-7 sm:p-8'
                       }`}
                     >
                       <div>
-                        {isFeatured ? (
+                        {featured ? (
                           <span
                             className="inline-flex rounded-full px-4 py-2 text-[0.72rem] font-semibold uppercase tracking-[0.24em]"
                             style={{ backgroundColor: 'rgba(200, 135, 63, 0.12)', color: 'var(--brand)' }}
@@ -444,14 +572,14 @@ export function MarketingHomePage({
 
                         <h3
                           className={`leading-none tracking-[-0.045em]${
-                            isFeatured ? ' mt-6 text-[3rem]' : ' text-[2.15rem]'
+                            featured ? ' mt-6 text-[3rem]' : ' text-[2.15rem]'
                           }`}
                           style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
                         >
                           {item.name}
                         </h3>
                         <p
-                          className={`mt-4 max-w-xl${isFeatured ? ' text-[1.08rem] leading-8' : ' text-base leading-7'}`}
+                          className={`mt-4 max-w-xl${featured ? ' text-[1.08rem] leading-8' : ' text-base leading-7'}`}
                           style={{ color: 'var(--ink-muted)' }}
                         >
                           {item.description ||
@@ -459,29 +587,27 @@ export function MarketingHomePage({
                         </p>
                       </div>
 
-                      <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                        <Link href={primaryHref} className="premium-button px-6 py-3 sm:w-auto">
-                          {isFeatured ? (
+                      <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          <Link href={primaryHref} className="premium-button px-6 py-3 sm:w-auto">
                             <ShoppingBag className="h-4 w-4" />
-                          ) : (
-                            <ArrowRight className="h-4 w-4" />
-                          )}
-                          {isFeatured ? 'Ver cardápio completo' : 'Ver no cardápio'}
-                        </Link>
-                        <a
-                          href={getWhatsAppUrl(`Olá! Gostaria de pedir: ${item.name}`)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="premium-button premium-button--ghost px-6 py-3 sm:w-auto"
-                          style={{
-                            color: 'var(--brand)',
-                            borderColor: 'var(--line)',
-                            background: 'rgba(255,250,244,0.62)',
-                          }}
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          WhatsApp
-                        </a>
+                            {featured ? 'Ver cardápio completo' : 'Ver no cardápio'}
+                          </Link>
+                          <a
+                            href={getWhatsAppUrl(`Olá! Gostaria de pedir: ${item.name}`)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="premium-button premium-button--ghost px-6 py-3 sm:w-auto"
+                            style={{
+                              color: 'var(--brand)',
+                              borderColor: 'var(--line)',
+                              background: 'rgba(255,250,244,0.62)',
+                            }}
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            WhatsApp
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </article>
@@ -492,7 +618,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      {/* ── About ─────────────────────────────────────────────────────────── */}
+      {/* ── AboutSection (copied from original AboutSection.tsx) ──────── */}
       <section id="sobre" className="section-shell" style={{ backgroundColor: 'rgba(234, 217, 192, 0.42)' }}>
         <div className="content-shell">
           <div className="grid items-center gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
@@ -550,7 +676,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      {/* ── Testimonials ──────────────────────────────────────────────────── */}
+      {/* ── Testimonials (copied from original Testimonials.tsx) ─────── */}
       <section id="depoimentos" className="section-shell section-divider">
         <div className="content-shell">
           <div className="section-intro lg:grid-cols-[minmax(0,0.8fr)_minmax(0,0.8fr)] lg:items-end lg:justify-between">
@@ -570,8 +696,8 @@ export function MarketingHomePage({
             {testimonials.map((testimonial) => (
               <article key={testimonial.name} className="soft-card rounded-[2rem] p-8 sm:p-10">
                 <div className="flex items-center gap-1">
-                  {Array.from({ length: testimonial.rating }).map((_, index) => (
-                    <Star key={index} className="h-4 w-4" style={{ fill: 'var(--gold)', color: 'var(--gold)' }} />
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4" style={{ fill: 'var(--gold)', color: 'var(--gold)' }} />
                   ))}
                 </div>
 
@@ -596,7 +722,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      {/* ── Info ──────────────────────────────────────────────────────────── */}
+      {/* ── InfoSection (copied from original InfoSection.tsx) ───────── */}
       <section className="section-shell" style={{ backgroundColor: 'rgba(255, 255, 255, 0.6)' }}>
         <div className="content-shell">
           <div className="section-intro">
@@ -659,7 +785,7 @@ export function MarketingHomePage({
         </div>
       </section>
 
-      {/* ── Final CTA ─────────────────────────────────────────────────────── */}
+      {/* ── FinalCTA (copied from original FinalCTA.tsx) ─────────────── */}
       <section className="section-shell overflow-hidden" style={{ backgroundColor: 'var(--surface-dark)' }}>
         <div
           className="absolute -left-16 top-10 h-56 w-56 rounded-full blur-3xl"
@@ -699,6 +825,88 @@ export function MarketingHomePage({
           </div>
         </div>
       </section>
-    </main>
+
+      {/* ── Footer (copied from original Footer.tsx) ─────────────────── */}
+      <footer
+        className="relative z-10 border-t py-14"
+        style={{ backgroundColor: '#221714', borderColor: 'rgba(255,255,255,0.08)', color: 'white' }}
+      >
+        <div className="content-shell">
+          <div className="grid gap-12 md:grid-cols-[1.2fr_0.8fr_0.9fr]">
+            <div className="max-w-md">
+              <span className="text-[0.7rem] font-semibold uppercase tracking-[0.3em] text-white/42">Sabor Mineiro</span>
+              <h3
+                className="mt-4 text-[2.8rem] leading-none tracking-[-0.05em]"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Comida com raiz, ritmo e calor de casa.
+              </h3>
+              <p className="mt-5 text-base leading-7 text-white/64">
+                Marmitas mineiras preparadas diariamente para quem quer almoçar com qualidade, memória afetiva e entrega
+                confiável.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/42">Navegação</p>
+              <div className="mt-5 space-y-3 text-base text-white/72">
+                <Link href={primaryHref} className="block transition-colors hover:text-[var(--gold)]">
+                  Cardápio
+                </Link>
+                <Link href="/#sobre" className="block transition-colors hover:text-[var(--gold)]">
+                  Sobre nós
+                </Link>
+                <Link href="/#depoimentos" className="block transition-colors hover:text-[var(--gold)]">
+                  Avaliações
+                </Link>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-white/42">Contato</p>
+              <div className="mt-5 space-y-4 text-white/72">
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4" />
+                  <span>{PHONE_DISPLAY}</span>
+                </div>
+                <a
+                  href={MAPS_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-start gap-3 transition-colors hover:text-[var(--gold)]"
+                >
+                  <MapPin className="mt-1 h-4 w-4 shrink-0" />
+                  <span>{ADDRESS}</span>
+                </a>
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <span>contato@sabormineiro.com</span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <a
+                  href="https://www.instagram.com/daianaxavier_marmitaria?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw=="
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border transition-colors hover:border-[var(--gold)] hover:text-[var(--gold)]"
+                  style={{ borderColor: 'rgba(255,255,255,0.14)' }}
+                  aria-label="Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="mt-12 border-t pt-6 text-sm uppercase tracking-[0.2em] text-white/34"
+            style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+          >
+            © 2026 Sabor Mineiro. Todos os direitos reservados.
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
