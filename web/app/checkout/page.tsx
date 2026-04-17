@@ -71,6 +71,7 @@ export default function CheckoutPage() {
         product_id: item.id,
         quantity: item.quantity,
         addons: normalizeAddonSelections(item.addons),
+        notes: item.notes?.trim() || null,
       })),
       notes: null,
       coupon_code: null,
@@ -260,7 +261,7 @@ export default function CheckoutPage() {
                   <span className="section-kicker">Resumo</span>
                   <div className="mt-5 grid gap-4">
                     {items.map((item) => (
-                      <div key={item.id} className="flex gap-3 border-b pb-4" style={{ borderColor: 'var(--line)' }}>
+                      <div key={item.cartKey} className="flex gap-3 border-b pb-4" style={{ borderColor: 'var(--line)' }}>
                         <div className="h-16 w-16 overflow-hidden rounded-[1rem] bg-white/60">
                           {item.imageUrl ? <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" /> : null}
                         </div>
@@ -271,6 +272,20 @@ export default function CheckoutPage() {
                           <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
                             {item.quantity} x {formatMoney(item.price)}
                           </p>
+                          {item.notes ? (
+                            <p className="mt-1 text-sm leading-6" style={{ color: 'var(--ink-muted)' }}>
+                              <strong style={{ color: 'var(--ink-strong)' }}>Obs.:</strong> {item.notes}
+                            </p>
+                          ) : null}
+                          {item.addons?.length ? (
+                            <div className="mt-1 space-y-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                              {item.addons.map((addon) => (
+                                <p key={`${item.cartKey}-${addon.addon_id}`}>
+                                  + {addon.name} x{addon.quantity}
+                                </p>
+                              ))}
+                            </div>
+                          ) : null}
                         </div>
                         <strong className="whitespace-nowrap text-sm" style={{ color: 'var(--ink-strong)' }}>
                           {formatMoney(item.price * item.quantity)}

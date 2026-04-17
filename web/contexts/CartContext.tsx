@@ -1,13 +1,25 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+
+export interface CartAddonSelection {
+  id: string;
+  addon_id: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+}
 
 interface CartItem {
+  cartKey: string;
   id: string;
   name: string;
+  basePrice: number;
   price: number;
   quantity: number;
-  addons?: any[];
+  notes?: string | null;
+  addons?: CartAddonSelection[];
   imageUrl?: string | null;
   description?: string | null;
 }
@@ -17,8 +29,8 @@ interface CartContextType {
   restaurantId: string | null;
   setRestaurantScope: (restaurantId: string) => void;
   addItem: (item: CartItem) => void;
-  updateItemQuantity: (id: string, quantity: number) => void;
-  removeItem: (id: string) => void;
+  updateItemQuantity: (cartKey: string, quantity: number) => void;
+  removeItem: (cartKey: string) => void;
   clearCart: () => void;
   total: number;
   itemCount: number;
@@ -74,7 +86,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items, restaurantId]);
 
-  const setRestaurantScope = (nextRestaurantId: string) => {
+  const setRestaurantScope = useCallback((nextRestaurantId: string) => {
     setRestaurantId((currentRestaurantId) => {
       if (!currentRestaurantId || currentRestaurantId === nextRestaurantId) {
         return nextRestaurantId;
@@ -83,15 +95,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       setItems([]);
       return nextRestaurantId;
     });
-  };
+  }, []);
 
-  const addItem = (item: CartItem) => {
+  const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {
-      const existing = prev.find((cartItem) => cartItem.id === item.id);
+      const existing = prev.find((cartItem) => cartItem.cartKey === item.cartKey);
 
       if (existing) {
         return prev.map((cartItem) =>
-          cartItem.id === item.id
+          cartItem.cartKey === item.cartKey
             ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
             : cartItem,
         );
@@ -99,44 +111,42 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
       return [...prev, item];
     });
-  };
+  }, []);
 
-  const updateItemQuantity = (id: string, quantity: number) => {
+  const updateItemQuantity = useCallback((cartKey: string, quantity: number) => {
     setItems((prev) => {
       if (quantity <= 0) {
-        return prev.filter((item) => item.id !== id);
+        return prev.filter((item) => item.cartKey !== cartKey);
       }
 
-      return prev.map((item) => (item.id === id ? { ...item, quantity } : item));
+      return prev.map((item) => (item.cartKey === cartKey ? { ...item, quantity } : item));
     });
-  };
+  }, []);
 
-  const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  };
+  const removeItem = useCallback((cartKey: string) => {
+    setItems((prev) => prev.filter((item) => item.cartKey !== cartKey));
+  }, []);
 
-  const clearCart = () => setItems([]);
+  const clearCart = useCallback(() => setItems([]), []);
 
   const total = useMemo(() => items.reduce((acc, item) => acc + item.price * item.quantity, 0), [items]);
   const itemCount = useMemo(() => items.reduce((acc, item) => acc + item.quantity, 0), [items]);
-
-  return (
-    <CartContext.Provider
-      value={{
-        items,
-        restaurantId,
-        setRestaurantScope,
-        addItem,
-        updateItemQuantity,
-        removeItem,
-        clearCart,
-        total,
-        itemCount,
-      }}
-    >
-      {children}
-    </CartContext.Provider>
+  const value = useMemo(
+    () => ({
+      items,
+      restaurantId,
+      setRestaurantScope,
+      addItem,
+      updateItemQuantity,
+      removeItem,
+      clearCart,
+      total,
+      itemCount,
+    }),
+    [items, restaurantId, setRestaurantScope, addItem, updateItemQuantity, removeItem, clearCart, total, itemCount],
   );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
 export const useCart = () => {

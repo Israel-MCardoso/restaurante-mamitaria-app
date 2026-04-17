@@ -1,4 +1,5 @@
 import './globals.css';
+import '@/components/site/landing.css';
 import { Cormorant_Garamond, Manrope } from 'next/font/google';
 import { CartProvider } from '@/contexts/CartContext';
 import { StorefrontProvider } from '@/contexts/StorefrontContext';

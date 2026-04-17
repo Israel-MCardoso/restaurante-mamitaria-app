@@ -27,6 +27,14 @@ type ProductRecord = {
   promo_price?: number | null;
   image_url?: string | null;
   is_available?: boolean | null;
+  addons?: AddonRecord[];
+};
+
+type AddonRecord = {
+  id: string;
+  name: string;
+  price: number;
+  is_available?: boolean | null;
 };
 
 type StorefrontCategory = CategoryRecord & {
@@ -76,6 +84,7 @@ async function getRestaurant(slug: string) {
     const productsResponse = await supabase
       .from('products')
       .select('id, category_id, name, description, price, promo_price, image_url, is_available')
+      .eq('restaurant_id', restaurantData.id)
       .in('category_id', categoryIds);
 
     const { data: productsData, error: productsError } = productsResponse as {
@@ -87,14 +96,74 @@ async function getRestaurant(slug: string) {
       return null;
     }
 
-    productsByCategoryId = (productsData ?? [])
-      .filter((product) => product.is_available !== false)
-      .reduce((map, product) => {
-        const categoryProducts = map.get(product.category_id) ?? [];
-        categoryProducts.push(product);
-        map.set(product.category_id, categoryProducts);
+    const availableProducts = (productsData ?? []).filter((product) => product.is_available !== false);
+    const productIds = availableProducts.map((product) => product.id);
+    const addonsByProductId = new Map<string, AddonRecord[]>();
+
+    if (productIds.length > 0) {
+      const productAddonsResponse = await supabase
+        .from('product_addons')
+        .select('product_id, addon_id')
+        .in('product_id', productIds);
+
+      const { data: productAddonsData, error: productAddonsError } = productAddonsResponse as {
+        data: Array<{ product_id: string; addon_id: string }> | null;
+        error: unknown;
+      };
+
+      if (productAddonsError) {
+        return null;
+      }
+
+      const addonIds = Array.from(new Set((productAddonsData ?? []).map((relation) => relation.addon_id)));
+      const relationMap = (productAddonsData ?? []).reduce((map, relation) => {
+        const productAddonIds = map.get(relation.product_id) ?? [];
+        productAddonIds.push(relation.addon_id);
+        map.set(relation.product_id, productAddonIds);
         return map;
-      }, new Map<string, ProductRecord[]>());
+      }, new Map<string, string[]>());
+
+      if (addonIds.length > 0) {
+        const addonsResponse = await supabase
+          .from('addons')
+          .select('id, name, price, is_available')
+          .eq('restaurant_id', restaurantData.id)
+          .in('id', addonIds);
+
+        const { data: addonsData, error: addonsError } = addonsResponse as {
+          data: AddonRecord[] | null;
+          error: unknown;
+        };
+
+        if (addonsError) {
+          return null;
+        }
+
+        const availableAddonsMap = new Map(
+          (addonsData ?? [])
+            .filter((addon) => addon.is_available !== false)
+            .map((addon) => [addon.id, addon] as const),
+        );
+
+        for (const [productId, linkedAddonIds] of relationMap.entries()) {
+          const productAddons = linkedAddonIds
+            .map((addonId) => availableAddonsMap.get(addonId))
+            .filter((addon): addon is AddonRecord => Boolean(addon));
+
+          addonsByProductId.set(productId, productAddons);
+        }
+      }
+    }
+
+    productsByCategoryId = availableProducts.reduce((map, product) => {
+      const categoryProducts = map.get(product.category_id) ?? [];
+      categoryProducts.push({
+        ...product,
+        addons: addonsByProductId.get(product.id) ?? [],
+      });
+      map.set(product.category_id, categoryProducts);
+      return map;
+    }, new Map<string, ProductRecord[]>());
   }
 
   const categories = activeCategories

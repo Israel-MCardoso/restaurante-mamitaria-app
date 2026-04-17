@@ -1,7 +1,5 @@
 'use client';
 
-import './landing.css';
-
 import { Header } from './original-landing/Header';
 import { Hero } from './original-landing/Hero';
 import { TrustSection } from './original-landing/TrustSection';
