@@ -41,6 +41,12 @@ type StorefrontCategory = CategoryRecord & {
   products: ProductRecord[];
 };
 
+function logStorefrontReadError(scope: string, error: unknown) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.error(`[storefront:${scope}]`, error);
+  }
+}
+
 async function getRestaurant(slug: string) {
   const supabase = getSupabaseClient();
 
@@ -57,6 +63,7 @@ async function getRestaurant(slug: string) {
   };
 
   if (restaurantError || !restaurantData) {
+    logStorefrontReadError('restaurant', restaurantError);
     return null;
   }
 
@@ -71,11 +78,14 @@ async function getRestaurant(slug: string) {
     error: unknown;
   };
 
+  const activeCategories = categoriesError
+    ? []
+    : (categoriesData ?? []).filter((category) => category.is_active !== false);
+
   if (categoriesError) {
-    return null;
+    logStorefrontReadError('categories', categoriesError);
   }
 
-  const activeCategories = (categoriesData ?? []).filter((category) => category.is_active !== false);
   const categoryIds = activeCategories.map((category) => category.id);
 
   let productsByCategoryId = new Map<string, ProductRecord[]>();
@@ -93,77 +103,77 @@ async function getRestaurant(slug: string) {
     };
 
     if (productsError) {
-      return null;
-    }
+      logStorefrontReadError('products', productsError);
+    } else {
+      const availableProducts = (productsData ?? []).filter((product) => product.is_available !== false);
+      const productIds = availableProducts.map((product) => product.id);
+      const addonsByProductId = new Map<string, AddonRecord[]>();
 
-    const availableProducts = (productsData ?? []).filter((product) => product.is_available !== false);
-    const productIds = availableProducts.map((product) => product.id);
-    const addonsByProductId = new Map<string, AddonRecord[]>();
+      if (productIds.length > 0) {
+        const productAddonsResponse = await supabase
+          .from('product_addons')
+          .select('product_id, addon_id')
+          .in('product_id', productIds);
 
-    if (productIds.length > 0) {
-      const productAddonsResponse = await supabase
-        .from('product_addons')
-        .select('product_id, addon_id')
-        .in('product_id', productIds);
-
-      const { data: productAddonsData, error: productAddonsError } = productAddonsResponse as {
-        data: Array<{ product_id: string; addon_id: string }> | null;
-        error: unknown;
-      };
-
-      if (productAddonsError) {
-        return null;
-      }
-
-      const addonIds = Array.from(new Set((productAddonsData ?? []).map((relation) => relation.addon_id)));
-      const relationMap = (productAddonsData ?? []).reduce((map, relation) => {
-        const productAddonIds = map.get(relation.product_id) ?? [];
-        productAddonIds.push(relation.addon_id);
-        map.set(relation.product_id, productAddonIds);
-        return map;
-      }, new Map<string, string[]>());
-
-      if (addonIds.length > 0) {
-        const addonsResponse = await supabase
-          .from('addons')
-          .select('id, name, price, is_available')
-          .eq('restaurant_id', restaurantData.id)
-          .in('id', addonIds);
-
-        const { data: addonsData, error: addonsError } = addonsResponse as {
-          data: AddonRecord[] | null;
+        const { data: productAddonsData, error: productAddonsError } = productAddonsResponse as {
+          data: Array<{ product_id: string; addon_id: string }> | null;
           error: unknown;
         };
 
-        if (addonsError) {
-          return null;
-        }
+        if (productAddonsError) {
+          logStorefrontReadError('product_addons', productAddonsError);
+        } else {
+          const addonIds = Array.from(new Set((productAddonsData ?? []).map((relation) => relation.addon_id)));
+          const relationMap = (productAddonsData ?? []).reduce((map, relation) => {
+            const productAddonIds = map.get(relation.product_id) ?? [];
+            productAddonIds.push(relation.addon_id);
+            map.set(relation.product_id, productAddonIds);
+            return map;
+          }, new Map<string, string[]>());
 
-        const availableAddonsMap = new Map(
-          (addonsData ?? [])
-            .filter((addon) => addon.is_available !== false)
-            .map((addon) => [addon.id, addon] as const),
-        );
+          if (addonIds.length > 0) {
+            const addonsResponse = await supabase
+              .from('addons')
+              .select('id, name, price, is_available')
+              .eq('restaurant_id', restaurantData.id)
+              .in('id', addonIds);
 
-        for (const [productId, linkedAddonIds] of relationMap.entries()) {
-          const productAddons = linkedAddonIds
-            .map((addonId) => availableAddonsMap.get(addonId))
-            .filter((addon): addon is AddonRecord => Boolean(addon));
+            const { data: addonsData, error: addonsError } = addonsResponse as {
+              data: AddonRecord[] | null;
+              error: unknown;
+            };
 
-          addonsByProductId.set(productId, productAddons);
+            if (addonsError) {
+              logStorefrontReadError('addons', addonsError);
+            } else {
+              const availableAddonsMap = new Map(
+                (addonsData ?? [])
+                  .filter((addon) => addon.is_available !== false)
+                  .map((addon) => [addon.id, addon] as const),
+              );
+
+              for (const [productId, linkedAddonIds] of relationMap.entries()) {
+                const productAddons = linkedAddonIds
+                  .map((addonId) => availableAddonsMap.get(addonId))
+                  .filter((addon): addon is AddonRecord => Boolean(addon));
+
+                addonsByProductId.set(productId, productAddons);
+              }
+            }
+          }
         }
       }
-    }
 
-    productsByCategoryId = availableProducts.reduce((map, product) => {
-      const categoryProducts = map.get(product.category_id) ?? [];
-      categoryProducts.push({
-        ...product,
-        addons: addonsByProductId.get(product.id) ?? [],
-      });
-      map.set(product.category_id, categoryProducts);
-      return map;
-    }, new Map<string, ProductRecord[]>());
+      productsByCategoryId = availableProducts.reduce((map, product) => {
+        const categoryProducts = map.get(product.category_id) ?? [];
+        categoryProducts.push({
+          ...product,
+          addons: addonsByProductId.get(product.id) ?? [],
+        });
+        map.set(product.category_id, categoryProducts);
+        return map;
+      }, new Map<string, ProductRecord[]>());
+    }
   }
 
   const categories = activeCategories
