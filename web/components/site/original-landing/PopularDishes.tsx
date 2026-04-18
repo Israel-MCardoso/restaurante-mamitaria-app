@@ -69,7 +69,7 @@ export function PopularDishes({
                   {/* ── Image ───────────────────────────────────────────── */}
                   <div
                     className={`food-image-frame relative block w-full${
-                      featured ? ' min-h-[500px]' : ' h-[360px]'
+                      featured ? ' h-[360px] min-h-[360px] lg:min-h-[500px]' : ' h-[360px] min-h-[360px]'
                     }`}
                   >
                     <img
@@ -82,7 +82,7 @@ export function PopularDishes({
                       height={featured ? 500 : 360}
                       loading={index === 0 ? 'eager' : 'lazy'}
                       decoding="async"
-                      className="food-image"
+                      className="food-image absolute inset-0 block h-full w-full object-cover object-center"
                     />
 
                     {/* Overlay bottom row */}
@@ -175,7 +175,7 @@ export function PopularDishes({
                       {/* Title */}
                       <h3
                         className={`leading-none tracking-[-0.045em]${
-                          featured ? ' mt-6 text-[3rem]' : ' mt-1 text-[2.15rem]'
+                          featured ? ' mt-6 text-[2.15rem] lg:text-[3rem]' : ' mt-1 text-[2.15rem]'
                         }`}
                         style={{ fontFamily: 'var(--font-display)', color: 'var(--ink-strong)' }}
                       >
@@ -184,7 +184,7 @@ export function PopularDishes({
 
                       {/* Description */}
                       <p
-                        className={`mt-4 max-w-xl${featured ? ' text-[1.08rem] leading-8' : ' text-base leading-7'}`}
+                        className={`mt-4 max-w-xl${featured ? ' text-base leading-7 lg:text-[1.08rem] lg:leading-8' : ' text-base leading-7'}`}
                         style={{ color: 'var(--ink-muted)' }}
                       >
                         {item.description ||
