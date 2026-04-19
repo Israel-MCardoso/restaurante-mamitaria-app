@@ -18,6 +18,11 @@ const cormorant = Cormorant_Garamond({
 export const metadata = {
   title: 'Família Mineira | Marmitaria e Doceria',
   description: 'Peça online pratos caseiros preparados com sabor de comida feita em casa.',
+  icons: {
+    icon: '/daiana-xavier.png',
+    shortcut: '/daiana-xavier.png',
+    apple: '/daiana-xavier.png',
+  },
 };
 
 export default function RootLayout({
