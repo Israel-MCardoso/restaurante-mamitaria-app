@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Image, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ImagePlus } from 'lucide-react-native';
 import { useRestaurant } from '../hooks/useRestaurant';
@@ -16,15 +16,19 @@ import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import { parseCurrencyInput } from '../utils/format';
 
-export default function ProductFormScreen({ route, navigation }: any) {
-  const { restaurantId, loading: restaurantLoading, error: restaurantError } = useRestaurant();
-  const editProduct = route.params?.product;
+type ProductFormState = {
+  id?: string;
+  name: string;
+  description: string;
+  price: string;
+  promo_price: string;
+  category_id: string;
+  image_url: string;
+  is_available: boolean;
+};
 
-  const [categories, setCategories] = useState<AdminCategory[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [form, setForm] = useState({
+function buildInitialForm(editProduct?: any): ProductFormState {
+  return {
     id: editProduct?.id,
     name: editProduct?.name || '',
     description: editProduct?.description || '',
@@ -33,7 +37,97 @@ export default function ProductFormScreen({ route, navigation }: any) {
     category_id: editProduct?.category_id || '',
     image_url: editProduct?.image_url || '',
     is_available: editProduct?.is_available ?? true,
+  };
+}
+
+async function launchProductImagePicker() {
+  const pickerOptions: ImagePicker.ImagePickerOptions = {
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    aspect: [4, 3],
+    quality: 0.8,
+    base64: false,
+  };
+
+  if (Platform.OS === 'android') {
+    console.info('[product-form] launching Android image picker without pre-request');
+    return ImagePicker.launchImageLibraryAsync(pickerOptions);
+  }
+
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  console.info('[product-form] iOS media permission result', {
+    granted: permission.granted,
+    status: permission.status,
+    canAskAgain: permission.canAskAgain,
   });
+
+  if (!permission.granted) {
+    return null;
+  }
+
+  return ImagePicker.launchImageLibraryAsync(pickerOptions);
+}
+
+export default function ProductFormScreen({ route, navigation }: any) {
+  const { restaurantId, loading: restaurantLoading, error: restaurantError } = useRestaurant();
+  const editProduct = route.params?.product;
+  const draftToken = route.params?.draftToken;
+
+  const [categories, setCategories] = useState<AdminCategory[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [isPickingImage, setIsPickingImage] = useState(false);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [form, setForm] = useState<ProductFormState>(() => buildInitialForm(editProduct));
+  const lastRouteStateKeyRef = useRef<string | null>(null);
+
+  const resetFormState = useCallback(
+    (reason: string) => {
+      const nextForm = buildInitialForm(editProduct);
+      setForm(nextForm);
+      setLoading(false);
+      setUploading(false);
+      setIsPickingImage(false);
+
+      console.info('[product-form] form state reset', {
+        reason,
+        isEdit: Boolean(editProduct?.id),
+        productId: editProduct?.id ?? null,
+        draftToken: draftToken ?? null,
+      });
+    },
+    [draftToken, editProduct],
+  );
+
+  useEffect(() => {
+    const routeStateKey = `${editProduct?.id ?? 'new'}:${draftToken ?? 'default'}`;
+
+    if (lastRouteStateKeyRef.current === routeStateKey) {
+      console.info('[product-form] route state preserved', {
+        routeStateKey,
+      });
+      return;
+    }
+
+    lastRouteStateKeyRef.current = routeStateKey;
+    resetFormState('route-params-change');
+  }, [draftToken, editProduct?.id, resetFormState]);
+
+  useEffect(() => {
+    console.info('[product-form] screen mounted', {
+      isEdit: Boolean(editProduct?.id),
+      productId: editProduct?.id ?? null,
+      draftToken: draftToken ?? null,
+    });
+
+    return () => {
+      console.info('[product-form] screen unmounted', {
+        isEdit: Boolean(editProduct?.id),
+        productId: editProduct?.id ?? null,
+        draftToken: draftToken ?? null,
+      });
+    };
+  }, [draftToken, editProduct?.id]);
 
   useEffect(() => {
     if (!restaurantId) {
@@ -59,48 +153,100 @@ export default function ProductFormScreen({ route, navigation }: any) {
   );
 
   async function handlePickImage() {
-    if (!restaurantId) {
-      Alert.alert('Restaurante não encontrado', restaurantError || 'Não foi possível identificar o restaurante para o upload.');
+    if (restaurantLoading || uploading || isPickingImage) {
+      console.info('[product-form] image picker blocked', {
+        restaurantLoading,
+        uploading,
+        isPickingImage,
+      });
+
+      if (restaurantLoading) {
+        Alert.alert('Aguarde', 'Estamos carregando o contexto do restaurante antes do upload.');
+      }
+
       return;
     }
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permissão necessária', 'Autorize o acesso à galeria para enviar imagens.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 0.8,
-      base64: false,
+    setIsPickingImage(true);
+    console.info('[product-form] image picker opening', {
+      isEdit: Boolean(editProduct?.id),
+      productId: editProduct?.id ?? null,
+      draftToken: draftToken ?? null,
     });
 
-    if (result.canceled || !result.assets.length) {
-      return;
-    }
-
-    setUploading(true);
     try {
-      const imageUrl = await storage.uploadImage(restaurantId, 'products', result.assets[0]);
-      setForm((current) => ({ ...current, image_url: imageUrl }));
+      const permissionSnapshot = await ImagePicker.getMediaLibraryPermissionsAsync();
+      console.info('[product-form] media permission snapshot before picker', {
+        granted: permissionSnapshot.granted,
+        status: permissionSnapshot.status,
+        canAskAgain: permissionSnapshot.canAskAgain,
+      });
+
+      const result = await launchProductImagePicker();
+      if (!result) {
+        console.warn('[product-form] image picker permission denied');
+        Alert.alert('Permissao necessaria', 'Autorize o acesso a galeria para enviar imagens.');
+        return;
+      }
+
+      if (result.canceled || !result.assets.length) {
+        console.info('[product-form] image picker cancelled');
+        return;
+      }
+
+      const selectedAsset = result.assets[0];
+      const assetMimeType =
+        typeof (selectedAsset as { mimeType?: unknown }).mimeType === 'string'
+          ? ((selectedAsset as { mimeType?: string }).mimeType ?? null)
+          : null;
+
+      console.info('[product-form] image picker returned asset', {
+        fileName: selectedAsset.fileName ?? null,
+        mimeType: assetMimeType,
+      });
+
+      setUploading(true);
+      try {
+        const resolvedRestaurantId = await storage.ensureRestaurantId(restaurantId);
+        console.info('[product-form] upload requested', {
+          restaurantId: resolvedRestaurantId,
+          categoryId: form.category_id || null,
+        });
+        const imageUrl = await storage.uploadImage(resolvedRestaurantId, 'products', selectedAsset);
+        console.info('[product-form] upload finished', {
+          restaurantId: resolvedRestaurantId,
+          imageUrl,
+        });
+        setForm((current) => ({ ...current, image_url: imageUrl }));
+      } catch (error: any) {
+        console.error('[product-form] upload failed', {
+          restaurantId: restaurantId ?? null,
+          categoryId: form.category_id || null,
+          message: error?.message ?? 'unknown error',
+        });
+        Alert.alert('Erro no upload', error?.message || 'Nao foi possivel enviar a imagem.');
+      } finally {
+        setUploading(false);
+      }
     } catch (error: any) {
-      Alert.alert('Erro no upload', error?.message || 'Não foi possível enviar a imagem.');
+      console.error('[product-form] image picker failed', {
+        message: error?.message ?? 'unknown error',
+      });
+      Alert.alert('Erro ao abrir galeria', error?.message || 'Nao foi possivel abrir a galeria agora.');
     } finally {
-      setUploading(false);
+      console.info('[product-form] image picker flow finalized');
+      setIsPickingImage(false);
     }
   }
 
   async function handleSave() {
-    if (!restaurantId) {
-      Alert.alert('Restaurante não encontrado', restaurantError || 'Não foi possível identificar o restaurante para salvar.');
+    if (!form.name.trim() || !form.price || !form.category_id) {
+      Alert.alert('Campos obrigatorios', 'Preencha nome, preco e categoria.');
       return;
     }
 
-    if (!form.name.trim() || !form.price || !form.category_id) {
-      Alert.alert('Campos obrigatórios', 'Preencha nome, preço e categoria.');
+    if (!activeCategories.some((category) => category.id === form.category_id)) {
+      Alert.alert('Categoria invalida', 'Selecione uma categoria ativa do restaurante antes de salvar.');
       return;
     }
 
@@ -108,60 +254,123 @@ export default function ProductFormScreen({ route, navigation }: any) {
     const parsedPromoPrice = form.promo_price ? Number.parseFloat(parseCurrencyInput(form.promo_price)) : null;
 
     if (Number.isNaN(parsedPrice)) {
-      Alert.alert('Preço inválido', 'Informe um valor válido para o preço do produto.');
+      Alert.alert('Preco invalido', 'Informe um valor valido para o preco do produto.');
       return;
     }
 
     if (parsedPromoPrice !== null && Number.isNaN(parsedPromoPrice)) {
-      Alert.alert('Preço promocional inválido', 'Informe um valor válido ou deixe o campo em branco.');
+      Alert.alert('Preco promocional invalido', 'Informe um valor valido ou deixe o campo em branco.');
       return;
     }
 
     setLoading(true);
-    const { error } = await api.products.upsert({
-      id: form.id,
-      restaurant_id: restaurantId,
-      category_id: form.category_id,
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price: parsedPrice,
-      promo_price: parsedPromoPrice,
-      image_url: form.image_url || null,
-      is_available: form.is_available,
-    });
 
-    if (error) {
-      Alert.alert('Erro', error.message || 'Falha ao salvar o produto.');
+    try {
+      const resolvedRestaurantId = await storage.ensureRestaurantId(restaurantId).catch((error: any) => {
+        Alert.alert(
+          'Restaurante nao encontrado',
+          error?.message || restaurantError || 'Nao foi possivel identificar o restaurante para salvar.',
+        );
+        return null;
+      });
+
+      if (!resolvedRestaurantId) {
+        return;
+      }
+
+      const { data: ownedCategory, error: categoryError } = await api.categories.validateOwnership(
+        resolvedRestaurantId,
+        form.category_id,
+      );
+
+      if (categoryError || !ownedCategory) {
+        console.error('[product-form] category ownership validation failed', {
+          restaurantId: resolvedRestaurantId,
+          categoryId: form.category_id,
+          message: categoryError?.message ?? 'category not found',
+        });
+        Alert.alert('Categoria invalida', 'A categoria selecionada nao pertence ao restaurante autenticado.');
+        return;
+      }
+
+      console.info('[product-form] saving product', {
+        restaurantId: resolvedRestaurantId,
+        categoryId: form.category_id,
+        hasImage: Boolean(form.image_url),
+        isEdit: Boolean(form.id),
+      });
+
+      const { error } = await api.products.upsert({
+        id: form.id,
+        restaurant_id: resolvedRestaurantId,
+        category_id: form.category_id,
+        name: form.name.trim(),
+        description: form.description.trim(),
+        price: parsedPrice,
+        promo_price: parsedPromoPrice,
+        image_url: form.image_url || null,
+        is_available: form.is_available,
+      });
+
+      if (error) {
+        console.error('[product-form] product save failed', {
+          restaurantId: resolvedRestaurantId,
+          categoryId: form.category_id,
+          message: error.message || 'unknown error',
+        });
+        Alert.alert('Erro', error.message || 'Falha ao salvar o produto.');
+        return;
+      }
+
+      console.info('[product-form] product save succeeded', {
+        restaurantId: resolvedRestaurantId,
+        categoryId: form.category_id,
+        productId: form.id || 'new-product',
+      });
+
+      if (editProduct?.image_url && editProduct.image_url !== form.image_url) {
+        await storage.removeImageByPublicUrl(editProduct.image_url);
+      }
+
+      resetFormState('save-success');
+      Alert.alert('Produto salvo', editProduct ? 'Produto atualizado com sucesso.' : 'Produto criado com sucesso.');
+      navigation.goBack();
+    } catch (error: any) {
+      console.error('[product-form] unexpected save error', {
+        message: error?.message ?? 'unknown error',
+      });
+      Alert.alert('Erro', error?.message || 'Falha inesperada ao salvar o produto.');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    Alert.alert('Produto salvo', editProduct ? 'Produto atualizado com sucesso.' : 'Produto criado com sucesso.');
-    navigation.goBack();
   }
 
   return (
     <AppScreen scrollable keyboardAware contentContainerStyle={styles.content}>
       <PageHeader
-        eyebrow="Catálogo"
+        eyebrow="Catalogo"
         title={editProduct ? 'Editar produto' : 'Novo produto'}
-        subtitle="Cadastre pratos, ajuste o preço e decida se o item já deve entrar na vitrine pública."
+        subtitle="Cadastre pratos, ajuste o preco e decida se o item ja deve entrar na vitrine publica."
       />
 
-      <TouchableOpacity style={styles.imageCard} onPress={handlePickImage} activeOpacity={0.88}>
+      <TouchableOpacity
+        style={[styles.imageCard, (restaurantLoading || uploading || isPickingImage) && styles.imageCardDisabled]}
+        onPress={handlePickImage}
+        activeOpacity={0.88}
+        disabled={restaurantLoading || uploading || isPickingImage}
+      >
         {form.image_url ? (
           <Image source={{ uri: form.image_url }} style={styles.image} />
         ) : (
           <View style={styles.imagePlaceholder}>
             <ImagePlus size={28} color={colors.primary} />
             <Text style={styles.imageTitle}>Selecionar imagem</Text>
-            <Text style={styles.imageDescription}>A foto será enviada ao Supabase Storage e vinculada ao produto.</Text>
+            <Text style={styles.imageDescription}>A foto sera enviada ao Supabase Storage e vinculada ao produto.</Text>
           </View>
         )}
 
         <View style={styles.cameraBadge}>
-          {uploading ? <ActivityIndicator color={colors.white} /> : <Camera size={16} color={colors.white} />}
+          {uploading || isPickingImage ? <ActivityIndicator color={colors.white} /> : <Camera size={16} color={colors.white} />}
         </View>
       </TouchableOpacity>
 
@@ -174,8 +383,8 @@ export default function ProductFormScreen({ route, navigation }: any) {
         />
 
         <Input
-          label="Descrição"
-          placeholder="Descreva ingredientes, acompanhamentos e observações."
+          label="Descricao"
+          placeholder="Descreva ingredientes, acompanhamentos e observacoes."
           multiline
           value={form.description}
           onChangeText={(value) => setForm((current) => ({ ...current, description: value }))}
@@ -185,7 +394,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
         <View style={styles.row}>
           <View style={styles.flex}>
             <Input
-              label="Preço"
+              label="Preco"
               placeholder="0,00"
               keyboardType="decimal-pad"
               value={form.price}
@@ -196,7 +405,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
           <View style={styles.rowSpacer} />
           <View style={styles.flex}>
             <Input
-              label="Preço promocional"
+              label="Preco promocional"
               placeholder="Opcional"
               keyboardType="decimal-pad"
               value={form.promo_price}
@@ -232,7 +441,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
 
         <View style={styles.switchRow}>
           <View style={styles.flex}>
-            <Text style={styles.fieldLabel}>Disponível no site</Text>
+            <Text style={styles.fieldLabel}>Disponivel no site</Text>
             <Text style={styles.switchDescription}>Quando ativo, o prato pode aparecer imediatamente no storefront.</Text>
           </View>
           <Switch
@@ -247,7 +456,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
           title={loading ? 'Salvando...' : 'Salvar produto'}
           onPress={handleSave}
           loading={loading}
-          disabled={restaurantLoading || uploading || categoriesLoading || activeCategories.length === 0}
+          disabled={restaurantLoading || uploading || isPickingImage || categoriesLoading || activeCategories.length === 0}
         />
       </Card>
     </AppScreen>
@@ -270,6 +479,9 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+  },
+  imageCardDisabled: {
+    opacity: 0.72,
   },
   imagePlaceholder: {
     paddingHorizontal: spacing.xl,

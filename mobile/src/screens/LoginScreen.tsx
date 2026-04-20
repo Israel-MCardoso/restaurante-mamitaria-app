@@ -13,13 +13,23 @@ import { typography } from '../theme/typography';
 
 interface LoginScreenProps {
   accessError?: string | null;
+  bootstrapError?: string | null;
+  onRetryBootstrap?: () => void;
+  onForceLogout?: () => void;
   onClearAccessError?: () => void;
 }
 
-export default function LoginScreen({ accessError, onClearAccessError }: LoginScreenProps) {
+export default function LoginScreen({
+  accessError,
+  bootstrapError,
+  onRetryBootstrap,
+  onForceLogout,
+  onClearAccessError,
+}: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const hasOperationalError = !!accessError || !!bootstrapError;
 
   async function handleLogin() {
     if (!email || !password) {
@@ -53,6 +63,7 @@ export default function LoginScreen({ accessError, onClearAccessError }: LoginSc
 
       <Card style={styles.card}>
         {accessError ? <Text style={styles.accessError}>{accessError}</Text> : null}
+        {bootstrapError ? <Text style={styles.bootstrapError}>{bootstrapError}</Text> : null}
         <Input
           label="E-mail"
           placeholder="voce@restaurante.com"
@@ -69,6 +80,12 @@ export default function LoginScreen({ accessError, onClearAccessError }: LoginSc
           secureTextEntry
         />
         <Button title="Entrar no painel" onPress={handleLogin} loading={loading} />
+        {hasOperationalError && onRetryBootstrap ? (
+          <Button title="Tentar novamente" variant="outline" onPress={onRetryBootstrap} style={styles.secondaryAction} />
+        ) : null}
+        {hasOperationalError && onForceLogout ? (
+          <Button title="Sair desta conta" variant="secondary" onPress={onForceLogout} style={styles.secondaryAction} />
+        ) : null}
       </Card>
 
       <Text style={styles.footer}>Ambiente administrativo conectado ao Supabase.</Text>
@@ -111,6 +128,14 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.error,
     marginBottom: spacing.md,
+  },
+  bootstrapError: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  secondaryAction: {
+    marginTop: spacing.md,
   },
   footer: {
     ...typography.caption,

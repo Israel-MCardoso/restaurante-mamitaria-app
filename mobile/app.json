@@ -5,13 +5,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/app-icon.png",
     "assetBundlePatterns": [
       "**/*"
     ],
     "android": {
       "package": "com.restaurante.admin",
       "adaptiveIcon": {
-        "backgroundColor": "#FFFFFF"
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#F7EBDD"
       }
     }
   }

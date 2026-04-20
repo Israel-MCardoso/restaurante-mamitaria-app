@@ -9,6 +9,7 @@ import {
 } from '@/lib/contracts';
 import { ApiError } from '@/lib/api/errors';
 import { createMercadoPagoPixPayment } from '@/lib/payments/mercado-pago';
+import { logMercadoPagoEvent } from '@/lib/payments/mercado-pago-security';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 interface CreateOrderRpcResponse {
@@ -147,7 +148,8 @@ async function maybeAttachPixPayment(order: CanonicalOrder, payload: unknown): P
   }
 
   const payerEmail = extractPixPayerEmail(payload);
-  const pixPayment = await createMercadoPagoPixPayment(order, payerEmail);
+  const restaurantId = await resolveOrderRestaurantId(order.order_id, payload);
+  const pixPayment = await createMercadoPagoPixPayment(order, payerEmail, restaurantId);
   const updatedOrder = await updateOrderPaymentData(order.order_id, pixPayment.paymentStatus, pixPayment.paymentData);
   await syncIdempotentOrderResponse(order.order_id, updatedOrder);
   return updatedOrder;
@@ -218,6 +220,35 @@ function extractPixPayerEmail(payload: unknown) {
   return email;
 }
 
+async function resolveOrderRestaurantId(orderId: string, payload: unknown) {
+  const value = (payload as { restaurant_id?: string | null })?.restaurant_id?.trim();
+
+  if (value) {
+    return value;
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data, error } = await (supabase as any)
+    .from('orders')
+    .select('restaurant_id')
+    .eq('id', orderId)
+    .maybeSingle();
+
+  if (error || !data?.restaurant_id) {
+    logMercadoPagoEvent(
+      'pix.resolve_restaurant_failed',
+      {
+        orderId,
+        hasRestaurantIdInPayload: Boolean(value),
+      },
+      error ?? new Error('restaurant_id missing'),
+    );
+    throw new ApiError(400, 'RESTAURANT_NOT_FOUND', 'Não foi possível identificar o restaurante para o pagamento Pix.', 'restaurant_id');
+  }
+
+  return String(data.restaurant_id);
+}
+
 function mapSupabaseError(message: string) {
   const knownMappings: Array<{ pattern: string; status: number; code: string; field?: string }> = [
     { pattern: 'ORDER_NOT_FOUND', status: 404, code: 'ORDER_NOT_FOUND', field: 'order_id' },
@@ -247,6 +278,9 @@ function mapSupabaseError(message: string) {
     { pattern: 'PIX_PAYMENT_DATA_MISSING', status: 502, code: 'PIX_PAYMENT_DATA_MISSING' },
     { pattern: 'PIX_PAYER_EMAIL_REQUIRED', status: 400, code: 'PIX_PAYER_EMAIL_REQUIRED', field: 'customer.email' },
     { pattern: 'MISSING_MERCADO_PAGO_ACCESS_TOKEN', status: 500, code: 'MISSING_MERCADO_PAGO_ACCESS_TOKEN' },
+    { pattern: 'MERCADO_PAGO_NOT_CONFIGURED', status: 409, code: 'MERCADO_PAGO_NOT_CONFIGURED' },
+    { pattern: 'MERCADO_PAGO_ACCESS_TOKEN_MISSING', status: 409, code: 'MERCADO_PAGO_ACCESS_TOKEN_MISSING' },
+    { pattern: 'INVALID_PAYMENT_PROVIDER', status: 400, code: 'INVALID_PAYMENT_PROVIDER' },
     { pattern: 'IDEMPOTENCY_RESPONSE_SYNC_FAILED', status: 500, code: 'IDEMPOTENCY_RESPONSE_SYNC_FAILED' },
   ];
 
@@ -313,6 +347,12 @@ function humanizeErrorCode(code: string) {
       return 'Informe um e-mail válido para receber o pagamento via Pix.';
     case 'MISSING_MERCADO_PAGO_ACCESS_TOKEN':
       return 'O Pix está temporariamente indisponível.';
+    case 'MERCADO_PAGO_NOT_CONFIGURED':
+      return 'Este restaurante ainda não configurou o Pix.';
+    case 'MERCADO_PAGO_ACCESS_TOKEN_MISSING':
+      return 'Este restaurante ainda não concluiu a integração do Pix.';
+    case 'INVALID_PAYMENT_PROVIDER':
+      return 'O provedor de pagamento informado não é suportado.';
     case 'IDEMPOTENCY_RESPONSE_SYNC_FAILED':
       return 'Não foi possível concluir seu pedido agora. Tente novamente em instantes.';
     default:

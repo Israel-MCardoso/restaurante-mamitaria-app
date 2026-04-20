@@ -3,13 +3,15 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, LogOut } from 'lucide-react-native';
+import { Camera, CreditCard, LogOut } from 'lucide-react-native';
 import { supabase } from '../lib/supabase';
 import { useRestaurant } from '../hooks/useRestaurant';
 import { api } from '../services/api';
@@ -23,13 +25,58 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
+
+async function launchSettingsImagePicker() {
+  const pickerOptions: ImagePicker.ImagePickerOptions = {
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: true,
+    quality: 0.85,
+    base64: false,
+  };
+
+  if (Platform.OS === 'android') {
+    console.info('[settings] launching Android image picker without pre-request');
+    return ImagePicker.launchImageLibraryAsync(pickerOptions);
+  }
+
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  console.info('[settings] iOS media permission result', {
+    granted: permission.granted,
+    status: permission.status,
+    canAskAgain: permission.canAskAgain,
+  });
+
+  if (!permission.granted) {
+    return null;
+  }
+
+  return ImagePicker.launchImageLibraryAsync(pickerOptions);
+}
 
 export default function SettingsScreen() {
   const { restaurantId, loading: restaurantLoading, error: restaurantError, debug } = useRestaurant();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [integrationLoading, setIntegrationLoading] = useState(true);
+  const [integrationSaving, setIntegrationSaving] = useState(false);
+  const [integrationValidating, setIntegrationValidating] = useState(false);
   const [uploadingField, setUploadingField] = useState<'logo_url' | 'banner_url' | null>(null);
   const [restaurant, setRestaurant] = useState<any>(null);
+  const [mercadoPagoForm, setMercadoPagoForm] = useState({
+    accessToken: '',
+    publicKey: '',
+    webhookSecret: '',
+    isEnabled: false,
+  });
+  const [mercadoPagoStatus, setMercadoPagoStatus] = useState({
+    isConfigured: false,
+    hasWebhookSecret: false,
+    accessTokenMasked: null as string | null,
+    publicKeyMasked: null as string | null,
+    webhookUrl: null as string | null,
+    updatedAt: null as string | null,
+  });
 
   useEffect(() => {
     if (!restaurantLoading) {
@@ -53,6 +100,34 @@ export default function SettingsScreen() {
 
     setRestaurant(data || null);
     setLoading(false);
+    await fetchMercadoPagoIntegration();
+  }
+
+  async function fetchMercadoPagoIntegration() {
+    setIntegrationLoading(true);
+
+    try {
+      const status = await api.paymentIntegrations.mercadoPagoStatus();
+      setMercadoPagoStatus({
+        isConfigured: status.isConfigured,
+        hasWebhookSecret: status.hasWebhookSecret,
+        accessTokenMasked: status.accessTokenMasked,
+        publicKeyMasked: status.publicKeyMasked,
+        webhookUrl: status.webhookUrl,
+        updatedAt: status.updatedAt,
+      });
+      setMercadoPagoForm((current) => ({
+        ...current,
+        accessToken: '',
+        publicKey: '',
+        webhookSecret: '',
+        isEnabled: status.isEnabled,
+      }));
+    } catch (error: any) {
+      Alert.alert('Integração indisponível', error?.message || 'Não foi possível carregar o status do Mercado Pago.');
+    } finally {
+      setIntegrationLoading(false);
+    }
   }
 
   async function handleUpload(field: 'logo_url' | 'banner_url') {
@@ -61,28 +136,34 @@ export default function SettingsScreen() {
       return;
     }
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permissão necessária', 'Autorize o acesso à galeria para enviar imagens.');
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.85,
-      base64: false,
-    });
-
-    if (result.canceled || !result.assets.length) {
-      return;
-    }
-
-    setUploadingField(field);
     try {
+      const permissionSnapshot = await ImagePicker.getMediaLibraryPermissionsAsync();
+      console.info('[settings] media permission snapshot before picker', {
+        field,
+        granted: permissionSnapshot.granted,
+        status: permissionSnapshot.status,
+        canAskAgain: permissionSnapshot.canAskAgain,
+      });
+
+      const result = await launchSettingsImagePicker();
+      if (!result) {
+        Alert.alert('Permissão necessária', 'Autorize o acesso à galeria para enviar imagens.');
+        return;
+      }
+
+      if (result.canceled || !result.assets.length) {
+        console.info('[settings] image picker cancelled', { field });
+        return;
+      }
+
+      setUploadingField(field);
       const publicUrl = await storage.uploadImage(restaurantId, 'settings', result.assets[0]);
       setRestaurant((current: any) => ({ ...current, [field]: publicUrl }));
     } catch (error: any) {
+      console.error('[settings] image picker/upload failed', {
+        field,
+        message: error?.message || 'unknown error',
+      });
       Alert.alert('Erro no upload', error?.message || 'Não foi possível enviar a imagem.');
     } finally {
       setUploadingField(null);
@@ -112,6 +193,108 @@ export default function SettingsScreen() {
     setSaving(false);
   }
 
+  async function handleValidateMercadoPago() {
+    if (!mercadoPagoForm.accessToken.trim()) {
+      Alert.alert('Access Token obrigatório', 'Cole o Access Token de produção para validar a integração.');
+      return;
+    }
+
+    setIntegrationValidating(true);
+
+    try {
+      const result = await api.paymentIntegrations.validateMercadoPago({
+        accessToken: mercadoPagoForm.accessToken,
+        publicKey: mercadoPagoForm.publicKey,
+      });
+
+      const accountLabel = result.accountName || result.accountEmail || 'Conta validada';
+      const publicKeyMessage = result.publicKeyLooksValid
+        ? 'A Public Key também parece válida.'
+        : 'A Public Key não pôde ser confirmada pelo formato informado.';
+
+      Alert.alert('Credenciais validadas', `${accountLabel}\n\n${publicKeyMessage}`);
+    } catch (error: any) {
+      Alert.alert('Validação falhou', error?.message || 'Não foi possível validar as credenciais agora.');
+    } finally {
+      setIntegrationValidating(false);
+    }
+  }
+
+  async function handleSaveMercadoPago() {
+    if (!mercadoPagoForm.accessToken.trim()) {
+      Alert.alert('Access Token obrigatório', 'Cole o Access Token de produção antes de salvar.');
+      return;
+    }
+
+    if (!mercadoPagoForm.publicKey.trim()) {
+      Alert.alert('Public Key obrigatória', 'Cole a Public Key de produção antes de salvar.');
+      return;
+    }
+
+    setIntegrationSaving(true);
+
+    try {
+      const status = await api.paymentIntegrations.saveMercadoPago({
+        accessToken: mercadoPagoForm.accessToken,
+        publicKey: mercadoPagoForm.publicKey,
+        webhookSecret: mercadoPagoForm.webhookSecret || null,
+        isEnabled: mercadoPagoForm.isEnabled,
+      });
+
+      setMercadoPagoStatus({
+        isConfigured: status.isConfigured,
+        hasWebhookSecret: status.hasWebhookSecret,
+        accessTokenMasked: status.accessTokenMasked,
+        publicKeyMasked: status.publicKeyMasked,
+        webhookUrl: status.webhookUrl,
+        updatedAt: status.updatedAt,
+      });
+      setMercadoPagoForm({
+        accessToken: '',
+        publicKey: '',
+        webhookSecret: '',
+        isEnabled: status.isEnabled,
+      });
+      Alert.alert('Integração salva', 'As credenciais do Mercado Pago foram atualizadas com sucesso.');
+    } catch (error: any) {
+      Alert.alert('Erro ao salvar', error?.message || 'Não foi possível salvar a integração do Mercado Pago.');
+    } finally {
+      setIntegrationSaving(false);
+    }
+  }
+
+  async function handleToggleMercadoPago(value: boolean) {
+    setMercadoPagoForm((current) => ({ ...current, isEnabled: value }));
+
+    if (!mercadoPagoStatus.isConfigured) {
+      return;
+    }
+
+    try {
+      const status = await api.paymentIntegrations.toggleMercadoPago(value);
+      setMercadoPagoStatus((current) => ({
+        ...current,
+        isConfigured: status.isConfigured,
+        hasWebhookSecret: status.hasWebhookSecret,
+        accessTokenMasked: status.accessTokenMasked,
+        publicKeyMasked: status.publicKeyMasked,
+        webhookUrl: status.webhookUrl,
+        updatedAt: status.updatedAt,
+      }));
+    } catch (error: any) {
+      setMercadoPagoForm((current) => ({ ...current, isEnabled: !value }));
+      Alert.alert('Erro ao atualizar', error?.message || 'Não foi possível atualizar o status da integração.');
+    }
+  }
+
+  async function handleCopyWebhookUrl() {
+    if (!mercadoPagoStatus.webhookUrl) {
+      return;
+    }
+
+    Alert.alert('URL do webhook', mercadoPagoStatus.webhookUrl);
+  }
+
   if (restaurantLoading || loading) {
     return (
       <AppScreen>
@@ -138,7 +321,7 @@ export default function SettingsScreen() {
             description={restaurantError || 'Não foi possível encontrar um restaurante vinculado ao usuário atual.'}
           />
           <View style={styles.debugBox}>
-            <Text style={styles.debugTitle}>Diagnostico</Text>
+            <Text style={styles.debugTitle}>Diagnóstico</Text>
             <Text style={styles.debugText}>user_id: {debug.userId || '-'}</Text>
             <Text style={styles.debugText}>email: {debug.email || '-'}</Text>
             <Text style={styles.debugText}>profile.restaurant_id: {debug.profileRestaurantId || '-'}</Text>
@@ -234,6 +417,108 @@ export default function SettingsScreen() {
         </View>
         <Button title="Salvar alterações" onPress={handleSave} loading={saving} />
       </Card>
+
+      <Card style={styles.integrationCard}>
+        <View style={styles.integrationHeader}>
+          <View style={styles.integrationHeaderCopy}>
+            <Text style={styles.integrationEyebrow}>Pagamentos</Text>
+            <Text style={styles.integrationTitle}>Integração Mercado Pago</Text>
+            <Text style={styles.integrationSubtitle}>
+              Para receber Pix direto na sua conta, cole aqui as credenciais de produção da sua aplicação Mercado Pago.
+            </Text>
+          </View>
+          <View style={styles.integrationIcon}>
+            <CreditCard size={20} color={colors.primary} />
+          </View>
+        </View>
+
+        <View style={styles.integrationSteps}>
+          <Text style={styles.integrationStep}>1. Acesse Mercado Pago Developers.</Text>
+          <Text style={styles.integrationStep}>2. Copie o Access Token e a Public Key de produção.</Text>
+          <Text style={styles.integrationStep}>3. Salve abaixo para ativar o Pix deste restaurante.</Text>
+        </View>
+
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleCopy}>
+            <Text style={styles.toggleTitle}>Pix ativo</Text>
+            <Text style={styles.toggleDescription}>
+              {mercadoPagoStatus.isConfigured
+                ? 'Ative quando quiser usar as credenciais já salvas.'
+                : 'Salve as credenciais primeiro para liberar o Pix em produção.'}
+            </Text>
+          </View>
+          <Switch
+            value={mercadoPagoForm.isEnabled}
+            onValueChange={handleToggleMercadoPago}
+            trackColor={{ false: colors.border, true: colors.primarySoft }}
+            thumbColor={mercadoPagoForm.isEnabled ? colors.primary : colors.surface}
+          />
+        </View>
+
+        {integrationLoading ? (
+          <View style={styles.integrationLoading}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : (
+          <View style={styles.statusBox}>
+            <Text style={styles.statusLine}>
+              Status: {mercadoPagoStatus.isConfigured ? 'configurado' : 'ainda não configurado'}
+            </Text>
+            <Text style={styles.statusLine}>
+              Access Token salvo: {mercadoPagoStatus.accessTokenMasked || 'nenhum'}
+            </Text>
+            <Text style={styles.statusLine}>
+              Public Key salva: {mercadoPagoStatus.publicKeyMasked || 'nenhuma'}
+            </Text>
+            <Text style={styles.statusLine}>
+              Assinatura de webhook: {mercadoPagoStatus.hasWebhookSecret ? 'configurada' : 'não informada'}
+            </Text>
+            <Text style={styles.statusLine}>Webhook: {mercadoPagoStatus.webhookUrl || '-'}</Text>
+            {mercadoPagoStatus.updatedAt ? (
+              <Text style={styles.statusLine}>Última atualização: {new Date(mercadoPagoStatus.updatedAt).toLocaleString('pt-BR')}</Text>
+            ) : null}
+          </View>
+        )}
+
+        <Input
+          label="Access Token de produção"
+          value={mercadoPagoForm.accessToken}
+          onChangeText={(value) => setMercadoPagoForm((current) => ({ ...current, accessToken: value }))}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="APP_USR-..."
+        />
+
+        <Input
+          label="Public Key de produção"
+          value={mercadoPagoForm.publicKey}
+          onChangeText={(value) => setMercadoPagoForm((current) => ({ ...current, publicKey: value }))}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="APP_USR-..."
+        />
+
+        <Input
+          label="Webhook secret (recomendado)"
+          value={mercadoPagoForm.webhookSecret}
+          onChangeText={(value) => setMercadoPagoForm((current) => ({ ...current, webhookSecret: value }))}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="Cole aqui o secret de assinatura do webhook"
+        />
+
+        <View style={styles.actionsRow}>
+          <View style={styles.actionFlex}>
+            <Button title="Validar credenciais" variant="outline" onPress={handleValidateMercadoPago} loading={integrationValidating} />
+          </View>
+          <View style={styles.rowSpacer} />
+          <View style={styles.actionFlex}>
+            <Button title="Salvar Mercado Pago" onPress={handleSaveMercadoPago} loading={integrationSaving} />
+          </View>
+        </View>
+
+        <Button title="Copiar URL do webhook" variant="secondary" onPress={handleCopyWebhookUrl} style={styles.copyButton} />
+      </Card>
     </AppScreen>
   );
 }
@@ -306,6 +591,104 @@ const styles = StyleSheet.create({
   },
   rowSpacer: {
     width: spacing.md,
+  },
+  actionFlex: {
+    flex: 1,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copyButton: {
+    marginTop: spacing.md,
+  },
+  integrationCard: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xxl,
+  },
+  integrationHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  integrationHeaderCopy: {
+    flex: 1,
+    paddingRight: spacing.md,
+  },
+  integrationEyebrow: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: spacing.xs,
+  },
+  integrationTitle: {
+    ...typography.title,
+    color: colors.darkText,
+    marginBottom: spacing.xs,
+  },
+  integrationSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+  },
+  integrationIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  integrationSteps: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.xs,
+  },
+  integrationStep: {
+    ...typography.caption,
+    color: colors.textSecondary,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
+  },
+  toggleCopy: {
+    flex: 1,
+    paddingRight: spacing.md,
+  },
+  toggleTitle: {
+    ...typography.body,
+    color: colors.darkText,
+    fontWeight: '700',
+  },
+  toggleDescription: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+  },
+  integrationLoading: {
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusBox: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+    gap: spacing.xs,
+  },
+  statusLine: {
+    ...typography.caption,
+    color: colors.darkText,
   },
   debugBox: {
     marginTop: spacing.lg,

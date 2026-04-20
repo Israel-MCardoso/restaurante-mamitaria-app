@@ -73,7 +73,7 @@ export default function MenuScreen({ navigation }: any) {
     });
 
     if (error) {
-      Alert.alert('Não foi possível atualizar', error.message);
+      Alert.alert('Nao foi possivel atualizar', error.message);
       return;
     }
 
@@ -81,15 +81,21 @@ export default function MenuScreen({ navigation }: any) {
   }
 
   function handleDelete(productId: string) {
-    Alert.alert('Excluir produto', 'Deseja realmente excluir este item do catálogo?', [
+    Alert.alert('Arquivar produto', 'Esse item sera ocultado da operacao atual sem apagar o historico dos pedidos.', [
       { text: 'Cancelar', style: 'cancel' },
       {
-        text: 'Excluir',
+        text: 'Arquivar',
         style: 'destructive',
         onPress: async () => {
-          const { error } = await api.products.delete(productId);
+          const product = products.find((item) => item.id === productId);
+          if (!product) {
+            Alert.alert('Produto nao encontrado', 'Nao foi possivel localizar o item selecionado.');
+            return;
+          }
+
+          const { error } = await api.products.archive(productId, product.restaurant_id);
           if (error) {
-            Alert.alert('Não foi possível excluir', error.message);
+            Alert.alert('Nao foi possivel arquivar', error.message);
             return;
           }
 
@@ -136,14 +142,14 @@ export default function MenuScreen({ navigation }: any) {
         ListHeaderComponent={
           <View style={styles.headerWrap}>
             <PageHeader
-              eyebrow="Catálogo"
+              eyebrow="Catalogo"
               title="Produtos"
-              subtitle="Cadastre pratos, ajuste preço e controle o que fica disponível para o cliente final."
+              subtitle="Cadastre pratos, ajuste preco e controle o que fica disponivel para o cliente final."
             />
 
             <View style={styles.summaryRow}>
               <Card style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>No catálogo</Text>
+                <Text style={styles.summaryLabel}>No catalogo</Text>
                 <Text style={styles.summaryValue}>{summary.total}</Text>
               </Card>
               <Card style={styles.summaryCard}>
@@ -208,7 +214,14 @@ export default function MenuScreen({ navigation }: any) {
                   thumbColor={colors.white}
                 />
                 <View style={styles.iconRow}>
-                  <TouchableOpacity onPress={() => navigation.navigate('ProductForm', { product: item })}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.push('ProductForm', {
+                        product: item,
+                        draftToken: `${item.id}-${Date.now()}`,
+                      })
+                    }
+                  >
                     <Edit2 size={18} color={colors.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => handleDelete(item.id)}>
@@ -222,13 +235,21 @@ export default function MenuScreen({ navigation }: any) {
         ListEmptyComponent={
           <EmptyState
             icon={Plus}
-            title="Seu catálogo ainda está vazio"
-            description="Cadastre o primeiro produto para começar a operar o cardápio pelo app."
+            title="Seu catalogo ainda esta vazio"
+            description="Cadastre o primeiro produto para comecar a operar o cardapio pelo app."
           />
         }
       />
 
-      <TouchableOpacity style={styles.fab} onPress={() => navigation.navigate('ProductForm')} activeOpacity={0.86}>
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() =>
+          navigation.push('ProductForm', {
+            draftToken: `new-${Date.now()}`,
+          })
+        }
+        activeOpacity={0.86}
+      >
         <Plus size={24} color={colors.white} />
       </TouchableOpacity>
     </AppScreen>

@@ -1,5 +1,14 @@
 import type { CanonicalOrder, PaymentData } from '@/lib/contracts';
 import { ApiError } from '@/lib/api/errors';
+import {
+  buildRestaurantMercadoPagoWebhookUrl,
+  requireEnabledRestaurantMercadoPagoIntegration,
+} from '@/lib/payments/mercado-pago-integration';
+import {
+  assertMercadoPagoProvider,
+  logMercadoPagoEvent,
+  redactMercadoPagoText,
+} from '@/lib/payments/mercado-pago-security';
 
 interface MercadoPagoPaymentResponse {
   id: number | string;
@@ -24,12 +33,12 @@ export interface PixPaymentResult {
 export async function createMercadoPagoPixPayment(
   order: CanonicalOrder,
   payerEmail: string,
+  restaurantId: string,
 ): Promise<PixPaymentResult> {
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+  const integration = await requireEnabledRestaurantMercadoPagoIntegration(restaurantId);
+  const accessToken = integration.access_token;
 
-  if (!accessToken) {
-    throw new ApiError(500, 'MISSING_MERCADO_PAGO_ACCESS_TOKEN', 'Mercado Pago access token is not configured.');
-  }
+  assertMercadoPagoProvider(integration.provider);
 
   const normalizedPayerEmail = payerEmail.trim();
 
@@ -43,7 +52,12 @@ export async function createMercadoPagoPixPayment(
     payment_method_id: 'pix',
     date_of_expiration: buildPixExpirationTimestamp(),
     external_reference: order.order_id,
-    notification_url: process.env.MERCADO_PAGO_WEBHOOK_URL,
+    notification_url: buildRestaurantMercadoPagoWebhookUrl(restaurantId),
+    metadata: {
+      restaurant_id: restaurantId,
+      order_id: order.order_id,
+      order_number: order.order_number,
+    },
     payer: {
       email: normalizedPayerEmail,
       first_name: extractFirstName(order.customer.name),
@@ -70,11 +84,19 @@ export async function createMercadoPagoPixPayment(
   });
 
   if (!response.ok) {
-    const bodyText = await response.text();
+    const bodyText = redactMercadoPagoText(await response.text());
+    logMercadoPagoEvent('pix.create_failed', {
+      restaurantId,
+      orderId: order.order_id,
+      orderNumber: order.order_number,
+      responseStatus: response.status,
+    });
     throw new ApiError(
       502,
       'PIX_PAYMENT_CREATION_FAILED',
-      `Mercado Pago Pix payment creation failed: ${bodyText || response.statusText}`,
+      bodyText
+        ? 'Não foi possível gerar o Pix com o Mercado Pago agora.'
+        : 'Não foi possível gerar o Pix agora. Tente novamente em instantes.',
     );
   }
 
@@ -82,10 +104,16 @@ export async function createMercadoPagoPixPayment(
   const transactionData = payment.point_of_interaction?.transaction_data;
 
   if (!transactionData?.qr_code || !transactionData.qr_code_base64) {
+    logMercadoPagoEvent('pix.create_missing_qr', {
+      restaurantId,
+      orderId: order.order_id,
+      orderNumber: order.order_number,
+      providerTransactionId: String(payment.id),
+    });
     throw new ApiError(
       502,
       'PIX_PAYMENT_DATA_MISSING',
-      'Mercado Pago did not return QR code data for the Pix payment.',
+      'Não foi possível gerar o QR Code Pix agora. Tente novamente em instantes.',
     );
   }
 

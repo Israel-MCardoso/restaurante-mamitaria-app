@@ -1,10 +1,21 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import { ApiError } from '@/lib/api/errors';
+import {
+  getRestaurantMercadoPagoIntegration,
+  type MercadoPagoIntegrationRecord,
+} from '@/lib/payments/mercado-pago-integration';
+import {
+  assertMercadoPagoProvider,
+  isUuid,
+  logMercadoPagoEvent,
+  redactMercadoPagoText,
+} from '@/lib/payments/mercado-pago-security';
 
 interface MercadoPagoWebhookContext {
   dataId: string;
   requestId: string;
   xSignature: string;
+  secret: string;
 }
 
 export interface MercadoPagoWebhookNotification {
@@ -28,15 +39,10 @@ export interface MercadoPagoPaymentDetails {
     };
   };
   external_reference?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
 
 export function validateMercadoPagoWebhookSignature(context: MercadoPagoWebhookContext) {
-  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
-
-  if (!secret) {
-    throw new ApiError(500, 'MISSING_MERCADO_PAGO_WEBHOOK_SECRET', 'Mercado Pago webhook secret is not configured.');
-  }
-
   const signatureParts = parseSignatureHeader(context.xSignature);
   const ts = signatureParts.ts;
   const v1 = signatureParts.v1;
@@ -46,7 +52,7 @@ export function validateMercadoPagoWebhookSignature(context: MercadoPagoWebhookC
   }
 
   const manifest = `id:${context.dataId.toLowerCase()};request-id:${context.requestId};ts:${ts};`;
-  const expectedSignature = createHmac('sha256', secret).update(manifest).digest('hex');
+  const expectedSignature = createHmac('sha256', context.secret).update(manifest).digest('hex');
 
   const receivedBuffer = Buffer.from(v1, 'hex');
   const expectedBuffer = Buffer.from(expectedSignature, 'hex');
@@ -56,13 +62,7 @@ export function validateMercadoPagoWebhookSignature(context: MercadoPagoWebhookC
   }
 }
 
-export async function getMercadoPagoPaymentDetails(paymentId: string): Promise<MercadoPagoPaymentDetails> {
-  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
-
-  if (!accessToken) {
-    throw new ApiError(500, 'MISSING_MERCADO_PAGO_ACCESS_TOKEN', 'Mercado Pago access token is not configured.');
-  }
-
+export async function getMercadoPagoPaymentDetails(paymentId: string, accessToken: string): Promise<MercadoPagoPaymentDetails> {
   const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
     method: 'GET',
     headers: {
@@ -72,15 +72,37 @@ export async function getMercadoPagoPaymentDetails(paymentId: string): Promise<M
   });
 
   if (!response.ok) {
-    const bodyText = await response.text();
+    const bodyText = redactMercadoPagoText(await response.text());
+    logMercadoPagoEvent('webhook.payment_lookup_failed', {
+      paymentId,
+      responseStatus: response.status,
+    });
     throw new ApiError(
       502,
       'MERCADO_PAGO_PAYMENT_LOOKUP_FAILED',
-      `Mercado Pago payment lookup failed: ${bodyText || response.statusText}`,
+      bodyText
+        ? 'Não foi possível confirmar o pagamento no Mercado Pago.'
+        : 'Não foi possível confirmar o pagamento no Mercado Pago.',
     );
   }
 
   return (await response.json()) as MercadoPagoPaymentDetails;
+}
+
+export async function resolveMercadoPagoWebhookIntegration(restaurantId: string): Promise<MercadoPagoIntegrationRecord> {
+  if (!isUuid(restaurantId)) {
+    throw new ApiError(400, 'INVALID_RESTAURANT_ID', 'Webhook recebido sem restaurant_id válido.');
+  }
+
+  const integration = await getRestaurantMercadoPagoIntegration(restaurantId);
+
+  if (!integration?.is_enabled || !integration.access_token?.trim()) {
+    throw new ApiError(404, 'MERCADO_PAGO_INTEGRATION_NOT_FOUND', 'No active Mercado Pago integration found for this restaurant.');
+  }
+
+  assertMercadoPagoProvider(integration.provider);
+
+  return integration;
 }
 
 export function mapMercadoPagoWebhookPaymentStatus(
