@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { getSupabaseClient } from '@/lib/supabase';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { StorefrontExperience } from '@/components/storefront/StorefrontExperience';
 import { SiteFooter, StorefrontHeader } from '@/components/site/SiteChrome';
 
@@ -48,7 +48,7 @@ function logStorefrontReadError(scope: string, error: unknown) {
 }
 
 async function getRestaurant(slug: string) {
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseAdminClient();
 
   const restaurantResponse = await supabase
     .from('restaurants')
