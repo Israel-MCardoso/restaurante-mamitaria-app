@@ -2,6 +2,7 @@
   "expo": {
     "name": "Restaurante Admin",
     "slug": "restaurante-admin",
+    "scheme": "com.restaurante.admin",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",

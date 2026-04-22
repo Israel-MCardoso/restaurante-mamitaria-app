@@ -2,6 +2,9 @@ import 'react-native-url-polyfill/auto';
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
 
+export const SUPABASE_AUTH_SCHEME = 'com.restaurante.admin';
+export const SUPABASE_PASSWORD_RESET_URL = `${SUPABASE_AUTH_SCHEME}://auth/reset-password`;
+
 const ExpoSecureStoreAdapter = {
   getItem: (key: string) => {
     return SecureStore.getItemAsync(key);

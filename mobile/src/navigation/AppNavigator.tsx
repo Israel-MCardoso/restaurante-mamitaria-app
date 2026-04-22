@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, StyleSheet, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { LayoutDashboard, Settings, ShoppingBag, Tag, Utensils } from 'lucide-react-native';
@@ -14,7 +14,10 @@ import AddonsScreen from '../screens/AddonsScreen';
 import CouponsScreen from '../screens/CouponsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import LoginScreen from '../screens/LoginScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import { supabase } from '../lib/supabase';
+import { handlePasswordRecoveryCallback, isPasswordRecoveryUrl } from '../services/authRecovery';
 import { clearRestaurantContext, persistRestaurantContext } from '../services/restaurantContext';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -32,6 +35,12 @@ type BootstrapState = {
   hasRestaurantContext: boolean;
   accessError: string | null;
   bootstrapError: string | null;
+};
+
+type PasswordRecoveryState = {
+  isProcessing: boolean;
+  active: boolean;
+  error: string | null;
 };
 
 const initialBootstrapState: BootstrapState = {
@@ -105,7 +114,7 @@ async function safePersistRestaurantContext(params: {
 function MenuStack() {
   return (
     <Stack.Navigator screenOptions={stackScreenOptions}>
-      <Stack.Screen name="MenuList" component={MenuScreen} options={{ title: 'Catálogo' }} />
+      <Stack.Screen name="MenuList" component={MenuScreen} options={{ title: 'Catalogo' }} />
       <Stack.Screen name="ProductForm" component={ProductFormScreen} options={{ title: 'Produto' }} />
       <Stack.Screen name="MenuCategories" component={CategoriesScreen} options={{ title: 'Categorias' }} />
       <Stack.Screen name="MenuAddons" component={AddonsScreen} options={{ title: 'Adicionais' }} />
@@ -139,9 +148,9 @@ function MainTabs() {
         headerShown: false,
       }}
     >
-      <Tab.Screen name="Início" component={DashboardScreen} options={{ tabBarIcon: ({ color }) => <LayoutDashboard color={color} /> }} />
+      <Tab.Screen name="Inicio" component={DashboardScreen} options={{ tabBarIcon: ({ color }) => <LayoutDashboard color={color} /> }} />
       <Tab.Screen name="Pedidos" component={OrdersStack} options={{ tabBarIcon: ({ color }) => <ShoppingBag color={color} /> }} />
-      <Tab.Screen name="Catálogo" component={MenuStack} options={{ tabBarIcon: ({ color }) => <Utensils color={color} /> }} />
+      <Tab.Screen name="Catalogo" component={MenuStack} options={{ tabBarIcon: ({ color }) => <Utensils color={color} /> }} />
       <Tab.Screen name="Categorias" component={CategoriesScreen} options={{ tabBarIcon: ({ color }) => <Tag color={color} size={20} /> }} />
       <Tab.Screen name="Ajustes" component={SettingsScreen} options={{ tabBarIcon: ({ color }) => <Settings color={color} /> }} />
     </Tab.Navigator>
@@ -151,8 +160,62 @@ function MainTabs() {
 export default function AppNavigator() {
   const [session, setSession] = useState<any>(null);
   const [bootstrapState, setBootstrapState] = useState<BootstrapState>(initialBootstrapState);
+  const [authView, setAuthView] = useState<'login' | 'forgot-password'>('login');
+  const [passwordNotice, setPasswordNotice] = useState<string | null>(null);
+  const [passwordRecoveryState, setPasswordRecoveryState] = useState<PasswordRecoveryState>({
+    isProcessing: false,
+    active: false,
+    error: null,
+  });
   const bootstrapRunIdRef = useRef(0);
   const lastAuthSessionRef = useRef<any>(null);
+  const lastForgotEmailRef = useRef('');
+  const pendingRecoveryUrlRef = useRef<string | null>(null);
+
+  const processIncomingAuthUrl = useCallback(async (url: string, source: string) => {
+    if (!isPasswordRecoveryUrl(url)) {
+      return;
+    }
+
+    if (pendingRecoveryUrlRef.current === url) {
+      console.info('[auth-recovery] skipping duplicated callback URL', { source });
+      return;
+    }
+
+    pendingRecoveryUrlRef.current = url;
+
+    console.info('[auth-recovery] processing incoming callback URL', { source });
+    setPasswordNotice(null);
+    setPasswordRecoveryState({
+      isProcessing: true,
+      active: false,
+      error: null,
+    });
+
+    try {
+      const result = await handlePasswordRecoveryCallback(url);
+
+      if (!result.handled) {
+        return;
+      }
+
+      setAuthView('login');
+      setPasswordRecoveryState({
+        isProcessing: false,
+        active: result.isRecovery && !result.error,
+        error: result.error,
+      });
+
+      if (result.error) {
+        setPasswordNotice(result.error);
+      }
+    } finally {
+      setPasswordRecoveryState((current) => ({
+        ...current,
+        isProcessing: false,
+      }));
+    }
+  }, []);
 
   const runBootstrap = useCallback(async (activeSession: any, origin: string) => {
     const runId = ++bootstrapRunIdRef.current;
@@ -184,6 +247,10 @@ export default function AppNavigator() {
         console.info('[bootstrap] no active session found', { origin, runId });
         setSession(null);
         await safeClearRestaurantContext('no-active-session');
+        setPasswordRecoveryState((current) => ({
+          ...current,
+          active: false,
+        }));
         commitState({
           isAuthenticated: false,
           isAuthorized: false,
@@ -258,7 +325,6 @@ export default function AppNavigator() {
           accessError,
           bootstrapError: null,
         });
-
         return;
       }
 
@@ -270,6 +336,7 @@ export default function AppNavigator() {
       });
 
       setSession(activeSession);
+      setAuthView('login');
       commitState({
         isAuthorized: true,
         hasRestaurantContext: true,
@@ -357,13 +424,46 @@ export default function AppNavigator() {
     };
   }, [runBootstrap]);
 
-  if (bootstrapState.isBootstrapping) {
+  useEffect(() => {
+    let mounted = true;
+
+    Linking.getInitialURL()
+      .then((url) => {
+        if (!mounted || !url) {
+          return;
+        }
+
+        void processIncomingAuthUrl(url, 'initial-url');
+      })
+      .catch((error: any) => {
+        console.warn('[auth-recovery] failed to inspect initial URL', {
+          message: error?.message ?? 'unknown error',
+        });
+      });
+
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      if (!mounted || !url) {
+        return;
+      }
+
+      void processIncomingAuthUrl(url, 'url-event');
+    });
+
+    return () => {
+      mounted = false;
+      subscription.remove();
+    };
+  }, [processIncomingAuthUrl]);
+
+  if (bootstrapState.isBootstrapping || passwordRecoveryState.isProcessing) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingTitle}>Preparando o painel</Text>
         <Text style={styles.loadingCopy}>
-          Validando seu acesso administrativo e carregando o contexto do restaurante.
+          {passwordRecoveryState.isProcessing
+            ? 'Validando o link de recuperacao e preparando a redefinicao da senha.'
+            : 'Validando seu acesso administrativo e carregando o contexto do restaurante.'}
         </Text>
       </View>
     );
@@ -375,33 +475,88 @@ export default function AppNavigator() {
         <Stack.Screen name="Main" component={MainTabs} />
       ) : (
         <Stack.Screen name="Login">
+          {() =>
+            authView === 'forgot-password' ? (
+              <ForgotPasswordScreen
+                initialEmail={lastForgotEmailRef.current}
+                onBack={() => setAuthView('login')}
+              />
+            ) : (
+              <LoginScreen
+                accessError={bootstrapState.accessError}
+                bootstrapError={bootstrapState.bootstrapError}
+                passwordNotice={passwordNotice}
+                onRetryBootstrap={() => void runBootstrap(lastAuthSessionRef.current, 'manual-retry')}
+                onForceLogout={async () => {
+                  console.info('[bootstrap] forced logout requested by user');
+                  await safeClearRestaurantContext('manual-logout');
+                  setPasswordRecoveryState({
+                    isProcessing: false,
+                    active: false,
+                    error: null,
+                  });
+                  setPasswordNotice(null);
+                  try {
+                    await withTimeout(supabase.auth.signOut(), 4000, 'O logout manual');
+                  } catch (error: any) {
+                    console.warn('[bootstrap] manual logout failed', {
+                      message: error?.message ?? 'unknown error',
+                    });
+                  }
+                }}
+                onClearAccessError={() => {
+                  setPasswordNotice(null);
+                  setBootstrapState((current) => ({
+                    ...current,
+                    accessError: null,
+                    bootstrapError: null,
+                  }));
+                }}
+                onForgotPassword={(email) => {
+                  lastForgotEmailRef.current = email?.trim() ?? '';
+                  setPasswordNotice(null);
+                  setAuthView('forgot-password');
+                }}
+              />
+            )
+          }
+        </Stack.Screen>
+      )}
+      {passwordRecoveryState.active ? (
+        <Stack.Screen name="ResetPassword">
           {() => (
-            <LoginScreen
-              accessError={bootstrapState.accessError}
-              bootstrapError={bootstrapState.bootstrapError}
-              onRetryBootstrap={() => void runBootstrap(lastAuthSessionRef.current, 'manual-retry')}
-              onForceLogout={async () => {
-                console.info('[bootstrap] forced logout requested by user');
-                await safeClearRestaurantContext('manual-logout');
+            <ResetPasswordScreen
+              mode="recovery"
+              errorMessage={passwordRecoveryState.error}
+              onCancel={async () => {
+                console.info('[auth-recovery] user cancelled password recovery');
+                setPasswordRecoveryState({
+                  isProcessing: false,
+                  active: false,
+                  error: null,
+                });
+                setPasswordNotice(null);
+                await safeClearRestaurantContext('password-recovery-cancelled');
                 try {
-                  await withTimeout(supabase.auth.signOut(), 4000, 'O logout manual');
+                  await withTimeout(supabase.auth.signOut(), 4000, 'O encerramento da sessao de recuperacao');
                 } catch (error: any) {
-                  console.warn('[bootstrap] manual logout failed', {
+                  console.warn('[auth-recovery] failed to close recovery session', {
                     message: error?.message ?? 'unknown error',
                   });
                 }
               }}
-              onClearAccessError={() =>
-                setBootstrapState((current) => ({
-                  ...current,
-                  accessError: null,
-                  bootstrapError: null,
-                }))
-              }
+              onComplete={() => {
+                setPasswordRecoveryState({
+                  isProcessing: false,
+                  active: false,
+                  error: null,
+                });
+                setPasswordNotice('Senha redefinida com sucesso. Voce ja pode entrar no painel com a nova senha.');
+              }}
             />
           )}
         </Stack.Screen>
-      )}
+      ) : null}
     </Stack.Navigator>
   );
 }

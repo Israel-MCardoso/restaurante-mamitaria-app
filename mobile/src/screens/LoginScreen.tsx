@@ -14,17 +14,21 @@ import { typography } from '../theme/typography';
 interface LoginScreenProps {
   accessError?: string | null;
   bootstrapError?: string | null;
+  passwordNotice?: string | null;
   onRetryBootstrap?: () => void;
   onForceLogout?: () => void;
   onClearAccessError?: () => void;
+  onForgotPassword?: (email?: string) => void;
 }
 
 export default function LoginScreen({
   accessError,
   bootstrapError,
+  passwordNotice,
   onRetryBootstrap,
   onForceLogout,
   onClearAccessError,
+  onForgotPassword,
 }: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,19 +37,25 @@ export default function LoginScreen({
 
   async function handleLogin() {
     if (!email || !password) {
-      Alert.alert('Campos obrigatórios', 'Informe e-mail e senha para entrar.');
+      Alert.alert('Campos obrigatorios', 'Informe e-mail e senha para entrar.');
       return;
     }
 
     setLoading(true);
     onClearAccessError?.();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (error) {
-      Alert.alert('Erro ao entrar', error.message);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        Alert.alert('Erro ao entrar', error.message);
+      }
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
@@ -55,15 +65,16 @@ export default function LoginScreen({
           <ShieldCheck size={36} color={colors.white} />
         </View>
         <Text style={styles.eyebrow}>Painel do restaurante</Text>
-        <Text style={styles.title}>Controle pedidos, cardápio e operação em um só lugar.</Text>
+        <Text style={styles.title}>Controle pedidos, cardapio e operacao em um so lugar.</Text>
         <Text style={styles.subtitle}>
-          Entre com sua conta para acompanhar o dia, ajustar produtos e responder rápido aos pedidos.
+          Entre com sua conta para acompanhar o dia, ajustar produtos e responder rapido aos pedidos.
         </Text>
       </View>
 
       <Card style={styles.card}>
         {accessError ? <Text style={styles.accessError}>{accessError}</Text> : null}
         {bootstrapError ? <Text style={styles.bootstrapError}>{bootstrapError}</Text> : null}
+        {passwordNotice ? <Text style={styles.passwordNotice}>{passwordNotice}</Text> : null}
         <Input
           label="E-mail"
           placeholder="voce@restaurante.com"
@@ -80,6 +91,12 @@ export default function LoginScreen({
           secureTextEntry
         />
         <Button title="Entrar no painel" onPress={handleLogin} loading={loading} />
+        <Button
+          title="Esqueci minha senha"
+          variant="outline"
+          onPress={() => onForgotPassword?.(email)}
+          style={styles.secondaryAction}
+        />
         {hasOperationalError && onRetryBootstrap ? (
           <Button title="Tentar novamente" variant="outline" onPress={onRetryBootstrap} style={styles.secondaryAction} />
         ) : null}
@@ -132,6 +149,11 @@ const styles = StyleSheet.create({
   bootstrapError: {
     ...typography.caption,
     color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  passwordNotice: {
+    ...typography.caption,
+    color: colors.primary,
     marginBottom: spacing.md,
   },
   secondaryAction: {

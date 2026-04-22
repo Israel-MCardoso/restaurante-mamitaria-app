@@ -58,6 +58,7 @@ export default function SettingsScreen() {
   const { restaurantId, loading: restaurantLoading, error: restaurantError, debug } = useRestaurant();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [integrationLoading, setIntegrationLoading] = useState(true);
   const [integrationSaving, setIntegrationSaving] = useState(false);
   const [integrationValidating, setIntegrationValidating] = useState(false);
@@ -76,6 +77,10 @@ export default function SettingsScreen() {
     publicKeyMasked: null as string | null,
     webhookUrl: null as string | null,
     updatedAt: null as string | null,
+  });
+  const [passwordForm, setPasswordForm] = useState({
+    password: '',
+    confirmPassword: '',
   });
 
   useEffect(() => {
@@ -191,6 +196,49 @@ export default function SettingsScreen() {
       Alert.alert('Tudo certo', 'Dados do restaurante atualizados com sucesso.');
     }
     setSaving(false);
+  }
+
+  async function handleChangePassword() {
+    if (!passwordForm.password || !passwordForm.confirmPassword) {
+      Alert.alert('Campos obrigatorios', 'Preencha e confirme a nova senha antes de salvar.');
+      return;
+    }
+
+    if (passwordForm.password.trim().length < 8) {
+      Alert.alert('Senha invalida', 'Use pelo menos 8 caracteres para proteger sua conta.');
+      return;
+    }
+
+    if (passwordForm.password !== passwordForm.confirmPassword) {
+      Alert.alert('Confirmacao diferente', 'A confirmacao da senha precisa ser igual ao valor digitado.');
+      return;
+    }
+
+    setPasswordSaving(true);
+
+    try {
+      console.info('[settings] updating password for authenticated admin');
+
+      const { error } = await supabase.auth.updateUser({
+        password: passwordForm.password.trim(),
+      });
+
+      if (error) {
+        console.error('[settings] failed to update password', {
+          message: error.message,
+        });
+        Alert.alert('Erro ao alterar senha', 'Nao foi possivel atualizar sua senha agora. Tente novamente em instantes.');
+        return;
+      }
+
+      setPasswordForm({
+        password: '',
+        confirmPassword: '',
+      });
+      Alert.alert('Senha atualizada', 'Sua senha administrativa foi alterada com sucesso.');
+    } finally {
+      setPasswordSaving(false);
+    }
   }
 
   async function handleValidateMercadoPago() {
@@ -418,6 +466,32 @@ export default function SettingsScreen() {
         <Button title="Salvar alterações" onPress={handleSave} loading={saving} />
       </Card>
 
+      <Card style={styles.passwordCard}>
+        <Text style={styles.passwordTitle}>Seguranca da conta</Text>
+        <Text style={styles.passwordSubtitle}>
+          Atualize sua senha administrativa sem sair do app. Use pelo menos 8 caracteres.
+        </Text>
+        <Input
+          label="Nova senha"
+          value={passwordForm.password}
+          onChangeText={(value) => setPasswordForm((current) => ({ ...current, password: value }))}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="Digite a nova senha"
+        />
+        <Input
+          label="Confirmar nova senha"
+          value={passwordForm.confirmPassword}
+          onChangeText={(value) => setPasswordForm((current) => ({ ...current, confirmPassword: value }))}
+          secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholder="Repita a nova senha"
+        />
+        <Button title="Atualizar senha" onPress={handleChangePassword} loading={passwordSaving} />
+      </Card>
+
       <Card style={styles.integrationCard}>
         <View style={styles.integrationHeader}>
           <View style={styles.integrationHeaderCopy}>
@@ -601,6 +675,19 @@ const styles = StyleSheet.create({
   },
   copyButton: {
     marginTop: spacing.md,
+  },
+  passwordCard: {
+    marginTop: spacing.lg,
+  },
+  passwordTitle: {
+    ...typography.title,
+    color: colors.darkText,
+    marginBottom: spacing.xs,
+  },
+  passwordSubtitle: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
   },
   integrationCard: {
     marginTop: spacing.lg,

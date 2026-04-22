@@ -26,6 +26,15 @@ export interface AdminProduct {
   } | null;
 }
 
+export interface AdminAddon {
+  id: string;
+  restaurant_id: string;
+  name: string;
+  price: number;
+  is_available?: boolean | null;
+  created_at?: string;
+}
+
 type AdminProductRelation = {
   name?: string | null;
   is_active?: boolean | null;
@@ -245,7 +254,12 @@ export const api = {
         error: error as ApiErrorLike | null,
       };
     },
-    upsert: (product: Partial<AdminProduct>) => supabase.from('products').upsert(product),
+    upsert: (product: Partial<AdminProduct>) =>
+      supabase
+        .from('products')
+        .upsert(product)
+        .select('id, restaurant_id, category_id, name, description, price, promo_price, image_url, is_available, created_at')
+        .single(),
     archive: (id: string, restaurantId: string) =>
       supabase
         .from('products')
@@ -272,9 +286,58 @@ export const api = {
   },
   addons: {
     list: (restaurantId: string) =>
-      supabase.from('addons').select('*').eq('restaurant_id', restaurantId),
-    upsert: (addon: any) => supabase.from('addons').upsert(addon),
+      supabase
+        .from('addons')
+        .select('id, restaurant_id, name, price, is_available, created_at')
+        .eq('restaurant_id', restaurantId)
+        .order('created_at', { ascending: false }),
+    upsert: (addon: Partial<AdminAddon>) => supabase.from('addons').upsert(addon),
     delete: (id: string) => supabase.from('addons').delete().eq('id', id),
+  },
+  productAddons: {
+    list: async (productId: string) => {
+      const response = await supabase
+        .from('product_addons')
+        .select('product_id, addon_id')
+        .eq('product_id', productId);
+
+      const { data, error } = response as {
+        data: Array<{ product_id: string; addon_id: string }> | null;
+        error: unknown;
+      };
+
+      return {
+        data: (data ?? []).map((item) => item.addon_id),
+        error: error as ApiErrorLike | null,
+      };
+    },
+    replace: async (productId: string, addonIds: string[]) => {
+      const deleteResponse = await supabase.from('product_addons').delete().eq('product_id', productId);
+      const deleteError = (deleteResponse as { error: unknown }).error as ApiErrorLike | null;
+
+      if (deleteError) {
+        return {
+          data: null,
+          error: deleteError,
+        };
+      }
+
+      if (addonIds.length === 0) {
+        return {
+          data: [],
+          error: null,
+        };
+      }
+
+      const insertResponse = await supabase
+        .from('product_addons')
+        .insert(addonIds.map((addonId) => ({ product_id: productId, addon_id: addonId })));
+
+      return {
+        data: addonIds,
+        error: (insertResponse as { error: unknown }).error as ApiErrorLike | null,
+      };
+    },
   },
   coupons: {
     list: (restaurantId: string) =>

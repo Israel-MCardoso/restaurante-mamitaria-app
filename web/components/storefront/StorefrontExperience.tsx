@@ -201,10 +201,11 @@ function ProductConfigurator({ product, notes, setNotes, selectedAddons, selecte
   configuredBasePrice: number; configuredUnitPrice: number; changeAddonQuantity: (addonId: string, quantity: number) => void; onClose: () => void; onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-stone-950/60 p-4 backdrop-blur-sm md:items-center">
-      <div className="max-h-[88vh] w-full max-w-3xl overflow-hidden rounded-[2rem] bg-[var(--page-bg-soft)] shadow-2xl">
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-stone-950/60 backdrop-blur-sm">
+      <div className="flex min-h-full items-end justify-center p-4 md:items-center">
+      <div className="flex max-h-[calc(100dvh-2rem)] w-full max-w-3xl flex-col overflow-hidden rounded-[2rem] bg-[var(--page-bg-soft)] shadow-2xl">
         <div className="flex items-center justify-between border-b px-6 py-5" style={{ borderColor: 'var(--line)' }}><div><p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: 'var(--brand)' }}>Personalize o pedido</p><h2 className="mt-1 text-[2.4rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>{product.name}</h2></div><button type="button" onClick={onClose} className="rounded-full border px-3 py-2 text-sm font-medium hover:bg-white/70" style={{ borderColor: 'var(--line)', color: 'var(--ink-muted)' }}>Fechar</button></div>
-        <div className="max-h-[64vh] space-y-6 overflow-y-auto px-6 py-5">
+        <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-6 py-5">
           <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
             <div className="food-image-frame h-52 w-full overflow-hidden rounded-[1.6rem] bg-stone-100">{product.image_url ? <img src={product.image_url} alt={product.name} className="food-image block h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center bg-[linear-gradient(135deg,_#fed7aa,_#ffedd5)] text-sm font-semibold text-orange-700">Imagem em breve</div>}</div>
             <div className="soft-card rounded-[1.5rem] p-5"><p className="text-sm leading-7" style={{ color: 'var(--ink-muted)' }}>{product.description?.trim() || 'Ajuste observacoes e adicionais antes de enviar para o carrinho.'}</p><div className="mt-4 flex items-center justify-between"><span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Preco base</span><strong style={{ color: 'var(--ink-strong)' }}>{formatMoney(configuredBasePrice)}</strong></div><div className="mt-2 flex items-center justify-between"><span className="text-sm" style={{ color: 'var(--ink-muted)' }}>Total com adicionais</span><strong style={{ color: 'var(--brand)' }}>{formatMoney(configuredUnitPrice)}</strong></div></div>
@@ -218,6 +219,7 @@ function ProductConfigurator({ product, notes, setNotes, selectedAddons, selecte
           </div>
         </div>
         <div className="border-t px-6 py-5" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)' }}><div className="flex items-center justify-between text-sm" style={{ color: 'var(--ink-muted)' }}><span>Total desta configuracao</span><span className="font-semibold" style={{ color: 'var(--ink-strong)' }}>{formatMoney(configuredUnitPrice)}</span></div><div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]"><button type="button" onClick={onClose} className="rounded-2xl border px-4 py-3 text-sm font-semibold hover:bg-white" style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}>Continuar navegando</button><button type="button" onClick={onConfirm} className="premium-button px-5 py-3 text-sm font-semibold">Adicionar ao carrinho<ArrowRight className="h-4 w-4" /></button></div></div>
+      </div>
       </div>
     </div>
   );

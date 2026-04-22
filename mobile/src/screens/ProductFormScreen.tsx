@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Switch, Text, To
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, ImagePlus } from 'lucide-react-native';
 import { useRestaurant } from '../hooks/useRestaurant';
-import { api, AdminCategory } from '../services/api';
+import { api, AdminAddon, AdminCategory } from '../services/api';
 import { storage } from '../services/storage';
 import { AppScreen } from '../components/layout/AppScreen';
 import { Button } from '../components/ui/Button';
@@ -14,7 +14,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import { parseCurrencyInput } from '../utils/format';
+import { formatCurrency, parseCurrencyInput } from '../utils/format';
 
 type ProductFormState = {
   id?: string;
@@ -74,10 +74,13 @@ export default function ProductFormScreen({ route, navigation }: any) {
   const draftToken = route.params?.draftToken;
 
   const [categories, setCategories] = useState<AdminCategory[]>([]);
+  const [availableAddons, setAvailableAddons] = useState<AdminAddon[]>([]);
+  const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [isPickingImage, setIsPickingImage] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [addonsLoading, setAddonsLoading] = useState(true);
   const [form, setForm] = useState<ProductFormState>(() => buildInitialForm(editProduct));
   const lastRouteStateKeyRef = useRef<string | null>(null);
 
@@ -88,6 +91,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
       setLoading(false);
       setUploading(false);
       setIsPickingImage(false);
+      setSelectedAddonIds([]);
 
       console.info('[product-form] form state reset', {
         reason,
@@ -132,6 +136,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
   useEffect(() => {
     if (!restaurantId) {
       setCategoriesLoading(false);
+      setAddonsLoading(false);
       return;
     }
 
@@ -145,12 +150,48 @@ export default function ProductFormScreen({ route, navigation }: any) {
 
       setCategoriesLoading(false);
     });
+
+    setAddonsLoading(true);
+    api.addons.list(restaurantId).then(({ data, error }) => {
+      if (error) {
+        Alert.alert('Erro', error.message);
+      } else {
+        setAvailableAddons((data || []).filter((addon) => addon.is_available !== false));
+      }
+
+      setAddonsLoading(false);
+    });
   }, [restaurantId]);
+
+  useEffect(() => {
+    if (!editProduct?.id) {
+      setSelectedAddonIds([]);
+      return;
+    }
+
+    api.productAddons.list(editProduct.id).then(({ data, error }) => {
+      if (error) {
+        console.error('[product-form] failed to load product addons', {
+          productId: editProduct.id,
+          message: error.message ?? 'unknown error',
+        });
+        return;
+      }
+
+      setSelectedAddonIds(data || []);
+    });
+  }, [editProduct?.id]);
 
   const activeCategories = useMemo(
     () => categories.filter((category) => category.is_active !== false),
     [categories],
   );
+
+  const toggleAddon = useCallback((addonId: string) => {
+    setSelectedAddonIds((current) =>
+      current.includes(addonId) ? current.filter((id) => id !== addonId) : [...current, addonId],
+    );
+  }, []);
 
   async function handlePickImage() {
     if (restaurantLoading || uploading || isPickingImage) {
@@ -300,7 +341,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
         isEdit: Boolean(form.id),
       });
 
-      const { error } = await api.products.upsert({
+      const { data: savedProduct, error } = await api.products.upsert({
         id: form.id,
         restaurant_id: resolvedRestaurantId,
         category_id: form.category_id,
@@ -322,10 +363,34 @@ export default function ProductFormScreen({ route, navigation }: any) {
         return;
       }
 
+      const savedProductId = savedProduct?.id ?? form.id;
+
+      if (!savedProductId) {
+        console.error('[product-form] product saved without id', {
+          restaurantId: resolvedRestaurantId,
+          categoryId: form.category_id,
+        });
+        Alert.alert('Erro', 'O produto foi salvo, mas nao foi possivel sincronizar os adicionais.');
+        return;
+      }
+
+      const { error: addonSyncError } = await api.productAddons.replace(savedProductId, selectedAddonIds);
+
+      if (addonSyncError) {
+        console.error('[product-form] product addons sync failed', {
+          productId: savedProductId,
+          selectedAddonIds,
+          message: addonSyncError.message ?? 'unknown error',
+        });
+        Alert.alert('Produto salvo parcialmente', 'O produto foi salvo, mas os adicionais nao puderam ser sincronizados agora.');
+        return;
+      }
+
       console.info('[product-form] product save succeeded', {
         restaurantId: resolvedRestaurantId,
         categoryId: form.category_id,
-        productId: form.id || 'new-product',
+        productId: savedProductId,
+        selectedAddonIds,
       });
 
       if (editProduct?.image_url && editProduct.image_url !== form.image_url) {
@@ -452,11 +517,47 @@ export default function ProductFormScreen({ route, navigation }: any) {
           />
         </View>
 
+        <Text style={styles.fieldLabel}>Adicionais disponiveis</Text>
+        {addonsLoading ? (
+          <ActivityIndicator color={colors.primary} style={styles.categoriesLoading} />
+        ) : availableAddons.length === 0 ? (
+          <Text style={styles.helperText}>Cadastre adicionais no painel para vincula-los a este prato.</Text>
+        ) : (
+          <>
+            <Text style={styles.helperText}>Selecione os complementos que podem aparecer para este produto no site.</Text>
+            <View style={styles.chipWrap}>
+              {availableAddons.map((addon) => {
+                const selected = selectedAddonIds.includes(addon.id);
+
+                return (
+                  <TouchableOpacity
+                    key={addon.id}
+                    style={[styles.chip, selected && styles.chipSelected]}
+                    onPress={() => toggleAddon(addon.id)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      {addon.name} {addon.price > 0 ? ` - ${formatCurrency(addon.price)}` : ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </>
+        )}
+
         <Button
           title={loading ? 'Salvando...' : 'Salvar produto'}
           onPress={handleSave}
           loading={loading}
-          disabled={restaurantLoading || uploading || isPickingImage || categoriesLoading || activeCategories.length === 0}
+          disabled={
+            restaurantLoading ||
+            uploading ||
+            isPickingImage ||
+            categoriesLoading ||
+            addonsLoading ||
+            activeCategories.length === 0
+          }
         />
       </Card>
     </AppScreen>
