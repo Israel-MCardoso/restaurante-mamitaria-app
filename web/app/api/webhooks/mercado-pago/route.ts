@@ -16,12 +16,16 @@ export async function POST(request: Request) {
 
   try {
     const url = new URL(request.url);
-    paymentId = url.searchParams.get('data.id') ?? '';
+    const payload = await parseJsonBody<MercadoPagoWebhookNotification>(request);
+    paymentId =
+      url.searchParams.get('data.id') ??
+      (typeof payload.data?.id === 'string' || typeof payload.data?.id === 'number' ? String(payload.data.id) : '') ??
+      '';
     restaurantId = url.searchParams.get('restaurant_id') ?? '';
     const xSignature = request.headers.get('x-signature') ?? '';
     const xRequestId = request.headers.get('x-request-id') ?? '';
 
-    if (!paymentId || !restaurantId || !xRequestId) {
+    if (!paymentId || !restaurantId) {
       throw new ApiError(400, 'INVALID_WEBHOOK_REQUEST', 'Mercado Pago webhook request is missing required metadata.');
     }
 
@@ -35,7 +39,11 @@ export async function POST(request: Request) {
       throw new ApiError(401, 'INVALID_WEBHOOK_SIGNATURE', 'Mercado Pago webhook signature is missing.');
     }
 
-    if (integration.webhook_secret?.trim() && xSignature) {
+    if (integration.webhook_secret?.trim() && !xRequestId) {
+      throw new ApiError(401, 'INVALID_WEBHOOK_SIGNATURE', 'Mercado Pago webhook request id is missing.');
+    }
+
+    if (integration.webhook_secret?.trim() && xSignature && xRequestId) {
       validateMercadoPagoWebhookSignature({
         dataId: paymentId,
         requestId: xRequestId,
@@ -43,8 +51,6 @@ export async function POST(request: Request) {
         secret: integration.webhook_secret,
       });
     }
-
-    const payload = await parseJsonBody<MercadoPagoWebhookNotification>(request);
 
     if (payload.type !== 'payment' && !String(payload.action ?? '').startsWith('payment.')) {
       return NextResponse.json({ ok: true, ignored: true }, { status: 200 });

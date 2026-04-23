@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { CreditCard, MapPin, Phone } from 'lucide-react-native';
+import { supabase } from '../lib/supabase';
 import { api } from '../services/api';
 import { AppScreen } from '../components/layout/AppScreen';
 import { Badge } from '../components/ui/Badge';
@@ -32,8 +33,28 @@ export default function OrderDetailScreen({ route }: any) {
     fetchOrderDetails();
   }, [orderId]);
 
-  async function fetchOrderDetails() {
-    setLoading(true);
+  useEffect(() => {
+    const subscription = supabase
+      .channel(`order-detail-${orderId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `id=eq.${orderId}` },
+        () => {
+          fetchOrderDetails(false);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [orderId]);
+
+  async function fetchOrderDetails(showLoader = true) {
+    if (showLoader) {
+      setLoading(true);
+    }
+
     const { data, error } = await api.orders.details(orderId);
 
     if (error || !data) {
@@ -159,9 +180,9 @@ export default function OrderDetailScreen({ route }: any) {
             <CreditCard size={18} color={colors.textSecondary} />
             <Text style={styles.infoText}>{String(order.payment_method || '').toUpperCase()}</Text>
           </View>
-          <View style={[styles.paymentBadge, order.payment_status === 'paid' ? styles.paidBadge : styles.pendingBadge]}>
+          <View style={[styles.paymentBadge, resolvePaymentBadgeStyle(order.payment_status)]}>
             <Text style={styles.paymentBadgeText}>
-              {order.payment_status === 'paid' ? 'Pago' : 'Pendente'}
+              {resolvePaymentLabel(order.payment_status)}
             </Text>
           </View>
         </View>
@@ -295,6 +316,9 @@ const styles = StyleSheet.create({
   paidBadge: {
     backgroundColor: '#E4F4E7',
   },
+  failedBadge: {
+    backgroundColor: '#FDE2E1',
+  },
   pendingBadge: {
     backgroundColor: '#FBECCC',
   },
@@ -304,3 +328,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 });
+
+function resolvePaymentLabel(paymentStatus?: string | null) {
+  switch ((paymentStatus ?? '').toLowerCase()) {
+    case 'paid':
+      return 'Pago';
+    case 'failed':
+      return 'Falhou';
+    case 'expired':
+      return 'Expirado';
+    default:
+      return 'Pendente';
+  }
+}
+
+function resolvePaymentBadgeStyle(paymentStatus?: string | null) {
+  switch ((paymentStatus ?? '').toLowerCase()) {
+    case 'paid':
+      return styles.paidBadge;
+    case 'failed':
+    case 'expired':
+      return styles.failedBadge;
+    default:
+      return styles.pendingBadge;
+  }
+}

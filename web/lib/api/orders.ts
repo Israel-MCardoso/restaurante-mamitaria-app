@@ -9,6 +9,11 @@ import {
 } from '@/lib/contracts';
 import { ApiError } from '@/lib/api/errors';
 import { createMercadoPagoPixPayment } from '@/lib/payments/mercado-pago';
+import {
+  getMercadoPagoPaymentDetails,
+  mapMercadoPagoWebhookPaymentStatus,
+} from '@/lib/payments/mercado-pago-webhook';
+import { getRestaurantMercadoPagoIntegration } from '@/lib/payments/mercado-pago-integration';
 import { logMercadoPagoEvent } from '@/lib/payments/mercado-pago-security';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
@@ -130,7 +135,7 @@ export async function getOrderById(orderId: string, accessToken: string): Promis
     );
   }
 
-  return order;
+  return reconcilePixPaymentStatus(order);
 }
 
 async function maybeAttachPixPayment(order: CanonicalOrder, payload: unknown): Promise<CanonicalOrder> {
@@ -207,6 +212,114 @@ async function syncIdempotentOrderResponse(orderId: string, order: CanonicalOrde
   if (error) {
     throw new ApiError(500, 'IDEMPOTENCY_RESPONSE_SYNC_FAILED', 'Unable to sync idempotent order response.');
   }
+}
+
+async function reconcilePixPaymentStatus(order: CanonicalOrder): Promise<CanonicalOrder> {
+  if (order.payment_method !== 'pix') {
+    return order;
+  }
+
+  if (order.payment_status !== 'pending' && order.payment_status !== 'unpaid') {
+    return order;
+  }
+
+  const providerTransactionId = order.payment_data?.provider_transaction_id?.trim();
+
+  if (!providerTransactionId) {
+    return order;
+  }
+
+  const supabase = getSupabaseAdminClient();
+  const { data: orderRow, error: orderError } = await (supabase as any)
+    .from('orders')
+    .select('restaurant_id')
+    .eq('id', order.order_id)
+    .maybeSingle();
+
+  if (orderError || !orderRow?.restaurant_id) {
+    logMercadoPagoEvent(
+      'pix.reconcile_order_lookup_failed',
+      {
+        orderId: order.order_id,
+        providerTransactionId,
+      },
+      orderError ?? new Error('restaurant_id missing'),
+    );
+    return order;
+  }
+
+  const restaurantId = String(orderRow.restaurant_id);
+  const integration = await getRestaurantMercadoPagoIntegration(restaurantId).catch((error) => {
+    logMercadoPagoEvent(
+      'pix.reconcile_integration_lookup_failed',
+      {
+        orderId: order.order_id,
+        restaurantId,
+      },
+      error,
+    );
+    return null;
+  });
+
+  if (!integration?.is_enabled || !integration.access_token?.trim()) {
+    return order;
+  }
+
+  const paymentDetails = await getMercadoPagoPaymentDetails(providerTransactionId, integration.access_token).catch((error) => {
+    logMercadoPagoEvent(
+      'pix.reconcile_lookup_failed',
+      {
+        orderId: order.order_id,
+        restaurantId,
+        providerTransactionId,
+      },
+      error,
+    );
+    return null;
+  });
+
+  if (!paymentDetails) {
+    return order;
+  }
+
+  const reconciledPaymentStatus = mapMercadoPagoWebhookPaymentStatus(
+    paymentDetails.status,
+    paymentDetails.status_detail,
+  );
+
+  if (reconciledPaymentStatus === order.payment_status) {
+    return order;
+  }
+
+  const reconciledPaymentData: PaymentData = {
+    qr_code: paymentDetails.point_of_interaction?.transaction_data?.qr_code ?? order.payment_data?.qr_code ?? null,
+    qr_code_base64:
+      paymentDetails.point_of_interaction?.transaction_data?.qr_code_base64 ??
+      order.payment_data?.qr_code_base64 ??
+      null,
+    copy_paste_code:
+      paymentDetails.point_of_interaction?.transaction_data?.qr_code ??
+      order.payment_data?.copy_paste_code ??
+      null,
+    expires_at: paymentDetails.date_of_expiration ?? order.payment_data?.expires_at ?? null,
+    provider_transaction_id: String(paymentDetails.id ?? providerTransactionId),
+  };
+
+  const updatedOrder = await updateOrderPaymentData(
+    order.order_id,
+    reconciledPaymentStatus,
+    reconciledPaymentData,
+  );
+  await syncIdempotentOrderResponse(order.order_id, updatedOrder);
+
+  logMercadoPagoEvent('pix.reconcile_updated', {
+    orderId: order.order_id,
+    restaurantId,
+    providerTransactionId,
+    paymentStatus: reconciledPaymentStatus,
+  });
+
+  return updatedOrder;
 }
 
 function extractPixPayerEmail(payload: unknown) {
