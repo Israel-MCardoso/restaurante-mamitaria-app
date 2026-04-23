@@ -11,6 +11,14 @@ export interface CartAddonSelection {
   totalPrice: number;
 }
 
+export interface CartOptionSelection {
+  option_id: string;
+  option_name: string;
+  option_item_id: string;
+  option_item_name: string;
+  priceAdjustment: number;
+}
+
 interface CartItem {
   cartKey: string;
   id: string;
@@ -20,6 +28,7 @@ interface CartItem {
   quantity: number;
   notes?: string | null;
   addons?: CartAddonSelection[];
+  options?: CartOptionSelection[];
   imageUrl?: string | null;
   description?: string | null;
 }

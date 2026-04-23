@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { Camera, ImagePlus } from 'lucide-react-native';
 import { useRestaurant } from '../hooks/useRestaurant';
-import { api, AdminAddon, AdminCategory } from '../services/api';
+import { api, AdminAddon, AdminCategory, AdminProductOptionGroup } from '../services/api';
 import { storage } from '../services/storage';
 import { AppScreen } from '../components/layout/AppScreen';
 import { Button } from '../components/ui/Button';
@@ -25,6 +26,12 @@ type ProductFormState = {
   category_id: string;
   image_url: string;
   is_available: boolean;
+};
+
+type ProductOptionDraft = {
+  key: string;
+  name: string;
+  itemsText: string;
 };
 
 function buildInitialForm(editProduct?: any): ProductFormState {
@@ -49,13 +56,9 @@ async function launchProductImagePicker() {
     base64: false,
   };
 
-  if (Platform.OS === 'android') {
-    console.info('[product-form] launching Android image picker without pre-request');
-    return ImagePicker.launchImageLibraryAsync(pickerOptions);
-  }
-
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  console.info('[product-form] iOS media permission result', {
+  console.info('[product-form] media permission result', {
+    platform: Platform.OS,
     granted: permission.granted,
     status: permission.status,
     canAskAgain: permission.canAskAgain,
@@ -76,22 +79,38 @@ export default function ProductFormScreen({ route, navigation }: any) {
   const [categories, setCategories] = useState<AdminCategory[]>([]);
   const [availableAddons, setAvailableAddons] = useState<AdminAddon[]>([]);
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [optionGroups, setOptionGroups] = useState<ProductOptionDraft[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isPickingImage, setIsPickingImage] = useState(false);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [addonsLoading, setAddonsLoading] = useState(true);
   const [form, setForm] = useState<ProductFormState>(() => buildInitialForm(editProduct));
   const lastRouteStateKeyRef = useRef<string | null>(null);
 
+  const resetTransientState = useCallback(
+    (reason: string) => {
+      setIsSubmitting(false);
+      setIsUploadingImage(false);
+      setIsPickingImage(false);
+
+      console.info('[product-form] transient state reset', {
+        reason,
+        isEdit: Boolean(editProduct?.id),
+        productId: editProduct?.id ?? null,
+        draftToken: draftToken ?? null,
+      });
+    },
+    [draftToken, editProduct?.id],
+  );
+
   const resetFormState = useCallback(
     (reason: string) => {
       const nextForm = buildInitialForm(editProduct);
       setForm(nextForm);
-      setLoading(false);
-      setUploading(false);
-      setIsPickingImage(false);
+      resetTransientState(`${reason}:transient`);
       setSelectedAddonIds([]);
+      setOptionGroups([]);
 
       console.info('[product-form] form state reset', {
         reason,
@@ -100,7 +119,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
         draftToken: draftToken ?? null,
       });
     },
-    [draftToken, editProduct],
+    [draftToken, editProduct, resetTransientState],
   );
 
   useEffect(() => {
@@ -132,6 +151,20 @@ export default function ProductFormScreen({ route, navigation }: any) {
       });
     };
   }, [draftToken, editProduct?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      resetTransientState('screen-focus');
+    }, [resetTransientState]),
+  );
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', () => {
+      resetTransientState('screen-before-remove');
+    });
+
+    return unsubscribe;
+  }, [navigation, resetTransientState]);
 
   useEffect(() => {
     if (!restaurantId) {
@@ -166,6 +199,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
   useEffect(() => {
     if (!editProduct?.id) {
       setSelectedAddonIds([]);
+      setOptionGroups([]);
       return;
     }
 
@@ -180,6 +214,18 @@ export default function ProductFormScreen({ route, navigation }: any) {
 
       setSelectedAddonIds(data || []);
     });
+
+    api.productOptions.list(editProduct.id).then(({ data, error }) => {
+      if (error) {
+        console.error('[product-form] failed to load product options', {
+          productId: editProduct.id,
+          message: error.message ?? 'unknown error',
+        });
+        return;
+      }
+
+      setOptionGroups(buildOptionDrafts(data || []));
+    });
   }, [editProduct?.id]);
 
   const activeCategories = useMemo(
@@ -193,12 +239,34 @@ export default function ProductFormScreen({ route, navigation }: any) {
     );
   }, []);
 
+  const addOptionGroup = useCallback(() => {
+    setOptionGroups((current) => [
+      ...current,
+      {
+        key: `group-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        name: '',
+        itemsText: '',
+      },
+    ]);
+  }, []);
+
+  const updateOptionGroup = useCallback((key: string, patch: Partial<ProductOptionDraft>) => {
+    setOptionGroups((current) =>
+      current.map((group) => (group.key === key ? { ...group, ...patch } : group)),
+    );
+  }, []);
+
+  const removeOptionGroup = useCallback((key: string) => {
+    setOptionGroups((current) => current.filter((group) => group.key !== key));
+  }, []);
+
   async function handlePickImage() {
-    if (restaurantLoading || uploading || isPickingImage) {
+    if (restaurantLoading || isUploadingImage || isPickingImage || isSubmitting) {
       console.info('[product-form] image picker blocked', {
         restaurantLoading,
-        uploading,
+        isUploadingImage,
         isPickingImage,
+        isSubmitting,
       });
 
       if (restaurantLoading) {
@@ -232,6 +300,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
 
       if (result.canceled || !result.assets.length) {
         console.info('[product-form] image picker cancelled');
+        resetTransientState('picker-cancelled');
         return;
       }
 
@@ -246,10 +315,10 @@ export default function ProductFormScreen({ route, navigation }: any) {
         mimeType: assetMimeType,
       });
 
-      setUploading(true);
+      setIsUploadingImage(true);
       try {
         const resolvedRestaurantId = await storage.ensureRestaurantId(restaurantId);
-        console.info('[product-form] upload requested', {
+        console.info('[product-form] upload started', {
           restaurantId: resolvedRestaurantId,
           categoryId: form.category_id || null,
         });
@@ -267,7 +336,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
         });
         Alert.alert('Erro no upload', error?.message || 'Nao foi possivel enviar a imagem.');
       } finally {
-        setUploading(false);
+        setIsUploadingImage(false);
       }
     } catch (error: any) {
       console.error('[product-form] image picker failed', {
@@ -281,6 +350,11 @@ export default function ProductFormScreen({ route, navigation }: any) {
   }
 
   async function handleSave() {
+    if (isSubmitting) {
+      console.info('[product-form] save blocked because submission is already running');
+      return;
+    }
+
     if (!form.name.trim() || !form.price || !form.category_id) {
       Alert.alert('Campos obrigatorios', 'Preencha nome, preco e categoria.');
       return;
@@ -304,7 +378,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
       return;
     }
 
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
       const resolvedRestaurantId = await storage.ensureRestaurantId(restaurantId).catch((error: any) => {
@@ -386,11 +460,24 @@ export default function ProductFormScreen({ route, navigation }: any) {
         return;
       }
 
+      const parsedOptionGroups = parseOptionDrafts(optionGroups);
+      const { error: optionSyncError } = await api.productOptions.replace(savedProductId, parsedOptionGroups);
+
+      if (optionSyncError) {
+        console.error('[product-form] product options sync failed', {
+          productId: savedProductId,
+          message: optionSyncError.message ?? 'unknown error',
+        });
+        Alert.alert('Produto salvo parcialmente', 'O produto foi salvo, mas as variacoes obrigatorias nao puderam ser sincronizadas agora.');
+        return;
+      }
+
       console.info('[product-form] product save succeeded', {
         restaurantId: resolvedRestaurantId,
         categoryId: form.category_id,
         productId: savedProductId,
         selectedAddonIds,
+        optionGroups: parsedOptionGroups.length,
       });
 
       if (editProduct?.image_url && editProduct.image_url !== form.image_url) {
@@ -406,7 +493,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
       });
       Alert.alert('Erro', error?.message || 'Falha inesperada ao salvar o produto.');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   }
 
@@ -419,10 +506,10 @@ export default function ProductFormScreen({ route, navigation }: any) {
       />
 
       <TouchableOpacity
-        style={[styles.imageCard, (restaurantLoading || uploading || isPickingImage) && styles.imageCardDisabled]}
+        style={[styles.imageCard, (restaurantLoading || isUploadingImage || isPickingImage || isSubmitting) && styles.imageCardDisabled]}
         onPress={handlePickImage}
         activeOpacity={0.88}
-        disabled={restaurantLoading || uploading || isPickingImage}
+        disabled={restaurantLoading || isUploadingImage || isPickingImage || isSubmitting}
       >
         {form.image_url ? (
           <Image source={{ uri: form.image_url }} style={styles.image} />
@@ -435,7 +522,7 @@ export default function ProductFormScreen({ route, navigation }: any) {
         )}
 
         <View style={styles.cameraBadge}>
-          {uploading || isPickingImage ? <ActivityIndicator color={colors.white} /> : <Camera size={16} color={colors.white} />}
+          {isUploadingImage || isPickingImage ? <ActivityIndicator color={colors.white} /> : <Camera size={16} color={colors.white} />}
         </View>
       </TouchableOpacity>
 
@@ -546,14 +633,43 @@ export default function ProductFormScreen({ route, navigation }: any) {
           </>
         )}
 
+        <Text style={styles.fieldLabel}>Variacoes obrigatorias</Text>
+        <Text style={styles.helperText}>Cada grupo salvo aqui sera obrigatorio no site com selecao unica (1/1). Use uma opcao por linha e, se quiser, acrescente preco com "|". Ex.: Grande|4,00</Text>
+        {optionGroups.length > 0 ? (
+          optionGroups.map((group, index) => (
+            <Card key={group.key} style={styles.optionCard}>
+              <Input
+                label={`Grupo obrigatorio ${index + 1}`}
+                placeholder="Ex: Tamanho, Proteina, Molho"
+                value={group.name}
+                onChangeText={(value) => updateOptionGroup(group.key, { name: value })}
+              />
+              <Input
+                label="Itens do grupo"
+                placeholder={'Ex:\nPequena\nMedia|2,00\nGrande|4,00'}
+                multiline
+                value={group.itemsText}
+                onChangeText={(value) => updateOptionGroup(group.key, { itemsText: value })}
+                inputStyle={styles.optionItemsInput}
+              />
+              <Button title="Remover grupo" variant="outline" onPress={() => removeOptionGroup(group.key)} />
+            </Card>
+          ))
+        ) : (
+          <Text style={styles.helperText}>Nenhum grupo obrigatorio cadastrado para este produto.</Text>
+        )}
+
+        <Button title="Adicionar grupo obrigatorio" variant="outline" onPress={addOptionGroup} />
+
         <Button
-          title={loading ? 'Salvando...' : 'Salvar produto'}
+          title={isSubmitting ? 'Salvando...' : 'Salvar produto'}
           onPress={handleSave}
-          loading={loading}
+          loading={isSubmitting}
           disabled={
             restaurantLoading ||
-            uploading ||
+            isUploadingImage ||
             isPickingImage ||
+            isSubmitting ||
             categoriesLoading ||
             addonsLoading ||
             activeCategories.length === 0
@@ -673,4 +789,65 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginTop: spacing.xs,
   },
+  optionCard: {
+    marginBottom: spacing.md,
+  },
+  optionItemsInput: {
+    minHeight: 140,
+  },
 });
+
+function buildOptionDrafts(groups: AdminProductOptionGroup[]): ProductOptionDraft[] {
+  return groups.map((group, index) => ({
+    key: group.id ?? `loaded-${index}`,
+    name: group.name,
+    itemsText: group.items
+      .map((item) => (item.price_adjustment > 0 ? `${item.name}|${item.price_adjustment}` : item.name))
+      .join('\n'),
+  }));
+}
+
+function parseOptionDrafts(optionGroups: ProductOptionDraft[]): AdminProductOptionGroup[] {
+  return optionGroups
+    .map((group, groupIndex) => {
+      const name = group.name.trim();
+      const items = group.itemsText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((line) => {
+          const [rawName, rawPrice] = line.split('|');
+          const itemName = rawName?.trim() ?? '';
+          const parsedPrice = rawPrice ? Number.parseFloat(parseCurrencyInput(rawPrice)) : 0;
+
+          if (!itemName) {
+            return null;
+          }
+
+          return {
+            name: itemName,
+            price_adjustment: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+            position: 0,
+            is_available: true,
+          };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .map((item, itemIndex) => ({
+          ...item,
+          position: itemIndex,
+        }));
+
+      if (!name || items.length === 0) {
+        return null;
+      }
+
+      return {
+        name,
+        min_select: 1,
+        max_select: 1,
+        position: groupIndex,
+        items,
+      };
+    })
+    .filter(Boolean) as AdminProductOptionGroup[];
+}

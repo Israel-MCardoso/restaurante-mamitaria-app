@@ -36,13 +36,9 @@ async function launchSettingsImagePicker() {
     base64: false,
   };
 
-  if (Platform.OS === 'android') {
-    console.info('[settings] launching Android image picker without pre-request');
-    return ImagePicker.launchImageLibraryAsync(pickerOptions);
-  }
-
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  console.info('[settings] iOS media permission result', {
+  console.info('[settings] media permission result', {
+    platform: Platform.OS,
     granted: permission.granted,
     status: permission.status,
     canAskAgain: permission.canAskAgain,

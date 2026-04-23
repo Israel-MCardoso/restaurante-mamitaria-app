@@ -28,6 +28,7 @@ type ProductRecord = {
   image_url?: string | null;
   is_available?: boolean | null;
   addons?: AddonRecord[];
+  options?: ProductOptionRecord[];
 };
 
 type AddonRecord = {
@@ -35,6 +36,25 @@ type AddonRecord = {
   name: string;
   price: number;
   is_available?: boolean | null;
+};
+
+type ProductOptionItemRecord = {
+  id: string;
+  option_id: string;
+  name: string;
+  price_adjustment: number;
+  is_available?: boolean | null;
+  position: number | null;
+};
+
+type ProductOptionRecord = {
+  id: string;
+  product_id: string;
+  name: string;
+  min_select: number;
+  max_select: number;
+  position: number | null;
+  items: ProductOptionItemRecord[];
 };
 
 type StorefrontCategory = CategoryRecord & {
@@ -108,6 +128,7 @@ async function getRestaurant(slug: string) {
       const availableProducts = (productsData ?? []).filter((product) => product.is_available !== false);
       const productIds = availableProducts.map((product) => product.id);
       const addonsByProductId = new Map<string, AddonRecord[]>();
+      const optionsByProductId = new Map<string, ProductOptionRecord[]>();
 
       if (productIds.length > 0) {
         const productAddonsResponse = await supabase
@@ -164,11 +185,65 @@ async function getRestaurant(slug: string) {
         }
       }
 
+      if (productIds.length > 0) {
+        const productOptionsResponse = await supabase
+          .from('product_options')
+          .select('id, product_id, name, min_select, max_select, position')
+          .in('product_id', productIds)
+          .order('position', { ascending: true });
+
+        const { data: productOptionsData, error: productOptionsError } = productOptionsResponse as {
+          data: Array<Omit<ProductOptionRecord, 'items'>> | null;
+          error: unknown;
+        };
+
+        if (productOptionsError) {
+          logStorefrontReadError('product_options', productOptionsError);
+        } else {
+          const optionIds = (productOptionsData ?? []).map((option) => option.id);
+          const optionItemsByOptionId = new Map<string, ProductOptionItemRecord[]>();
+
+          if (optionIds.length > 0) {
+            const optionItemsResponse = await supabase
+              .from('product_option_items')
+              .select('id, option_id, name, price_adjustment, is_available, position')
+              .in('option_id', optionIds)
+              .order('position', { ascending: true });
+
+            const { data: optionItemsData, error: optionItemsError } = optionItemsResponse as {
+              data: ProductOptionItemRecord[] | null;
+              error: unknown;
+            };
+
+            if (optionItemsError) {
+              logStorefrontReadError('product_option_items', optionItemsError);
+            } else {
+              for (const item of (optionItemsData ?? []).filter((optionItem) => optionItem.is_available !== false)) {
+                const currentItems = optionItemsByOptionId.get(item.option_id) ?? [];
+                currentItems.push(item);
+                optionItemsByOptionId.set(item.option_id, currentItems);
+              }
+            }
+          }
+
+          for (const option of productOptionsData ?? []) {
+            const optionWithItems: ProductOptionRecord = {
+              ...option,
+              items: optionItemsByOptionId.get(option.id) ?? [],
+            };
+            const currentOptions = optionsByProductId.get(option.product_id) ?? [];
+            currentOptions.push(optionWithItems);
+            optionsByProductId.set(option.product_id, currentOptions);
+          }
+        }
+      }
+
       productsByCategoryId = availableProducts.reduce((map, product) => {
         const categoryProducts = map.get(product.category_id) ?? [];
         categoryProducts.push({
           ...product,
           addons: addonsByProductId.get(product.id) ?? [],
+          options: optionsByProductId.get(product.id) ?? [],
         });
         map.set(product.category_id, categoryProducts);
         return map;

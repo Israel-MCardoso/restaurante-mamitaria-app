@@ -81,6 +81,7 @@ export default function CheckoutPage() {
         product_id: item.id,
         quantity: item.quantity,
         addons: normalizeAddonSelections(item.addons),
+        options: normalizeOptionSelections(item.options),
         notes: item.notes?.trim() || null,
       })),
       coupon_code: formData.couponCode.trim() || null,
@@ -192,6 +193,7 @@ export default function CheckoutPage() {
         product_id: item.id,
         quantity: item.quantity,
         addons: normalizeAddonSelections(item.addons),
+        options: normalizeOptionSelections(item.options),
         notes: item.notes?.trim() || null,
       })),
       notes: null,
@@ -464,7 +466,7 @@ export default function CheckoutPage() {
                   </form>
                 </div>
 
-                <aside className="soft-card sticky top-32 rounded-[2rem] p-6">
+                <aside className="soft-card rounded-[2rem] p-6 lg:sticky lg:top-32">
                   <span className="section-kicker">Resumo</span>
                   <div className="mt-5 grid gap-4">
                     {items.map((item) => (
@@ -483,6 +485,15 @@ export default function CheckoutPage() {
                             <p className="mt-1 text-sm leading-6" style={{ color: 'var(--ink-muted)' }}>
                               <strong style={{ color: 'var(--ink-strong)' }}>Obs.:</strong> {item.notes}
                             </p>
+                          ) : null}
+                          {item.options?.length ? (
+                            <div className="mt-1 space-y-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                              {item.options.map((option) => (
+                                <p key={`${item.cartKey}-${option.option_id}`}>
+                                  {option.option_name}: {option.option_item_name}
+                                </p>
+                              ))}
+                            </div>
                           ) : null}
                           {item.addons?.length ? (
                             <div className="mt-1 space-y-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
@@ -614,6 +625,31 @@ function normalizeAddonSelections(addons: unknown) {
       };
     })
     .filter((addon): addon is { addon_id: string; quantity: number } => addon !== null);
+}
+
+function normalizeOptionSelections(options: unknown) {
+  if (!Array.isArray(options) || options.length === 0) {
+    return [];
+  }
+
+  return options
+    .map((option) => {
+      if (!option || typeof option !== 'object') {
+        return null;
+      }
+
+      const candidate = option as { option_id?: string; option_item_id?: string };
+
+      if (!candidate.option_id || !candidate.option_item_id) {
+        return null;
+      }
+
+      return {
+        option_id: candidate.option_id,
+        option_item_id: candidate.option_item_id,
+      };
+    })
+    .filter((option): option is { option_id: string; option_item_id: string } => option !== null);
 }
 
 function formatMoney(value: number) {

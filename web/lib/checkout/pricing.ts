@@ -59,6 +59,22 @@ type AddonRow = {
   is_available: boolean | null;
 };
 
+type ProductOptionRow = {
+  id: string;
+  product_id: string;
+  name: string;
+  min_select: number | null;
+  max_select: number | null;
+};
+
+type ProductOptionItemRow = {
+  id: string;
+  option_id: string;
+  name: string;
+  price_adjustment: number | string;
+  is_available: boolean | null;
+};
+
 type CouponRow = {
   id: string;
   code: string;
@@ -104,6 +120,8 @@ export async function calculateOrderQuote(
 
   const addonIds = payload.items.flatMap((item) => (item.addons ?? []).map((addon) => addon.addon_id));
   const uniqueAddonIds = [...new Set(addonIds)];
+  const optionItemIds = payload.items.flatMap((item) => (item.options ?? []).map((option) => option.option_item_id));
+  const uniqueOptionItemIds = [...new Set(optionItemIds)];
 
   const productAddonPairs = new Set<string>();
 
@@ -124,6 +142,8 @@ export async function calculateOrderQuote(
   }
 
   const addons = new Map<string, AddonRow>();
+  const productOptions = new Map<string, ProductOptionRow[]>();
+  const optionItems = new Map<string, ProductOptionItemRow>();
 
   if (uniqueAddonIds.length > 0) {
     const { data: addonsData, error: addonsError } = await (supabase as any)
@@ -138,6 +158,38 @@ export async function calculateOrderQuote(
 
     for (const addon of (addonsData ?? []) as AddonRow[]) {
       addons.set(addon.id, addon);
+    }
+  }
+
+  if (productIds.length > 0) {
+    const { data: productOptionsData, error: productOptionsError } = await (supabase as any)
+      .from('product_options')
+      .select('id, product_id, name, min_select, max_select')
+      .in('product_id', productIds);
+
+    if (productOptionsError) {
+      throw new ApiError(500, 'QUOTE_PRODUCT_OPTIONS_FAILED', 'Nao foi possivel validar as opcoes do produto agora.');
+    }
+
+    for (const option of (productOptionsData ?? []) as ProductOptionRow[]) {
+      const currentOptions = productOptions.get(option.product_id) ?? [];
+      currentOptions.push(option);
+      productOptions.set(option.product_id, currentOptions);
+    }
+  }
+
+  if (uniqueOptionItemIds.length > 0) {
+    const { data: optionItemsData, error: optionItemsError } = await (supabase as any)
+      .from('product_option_items')
+      .select('id, option_id, name, price_adjustment, is_available')
+      .in('id', uniqueOptionItemIds);
+
+    if (optionItemsError) {
+      throw new ApiError(500, 'QUOTE_PRODUCT_OPTIONS_FAILED', 'Nao foi possivel validar as opcoes do produto agora.');
+    }
+
+    for (const optionItem of (optionItemsData ?? []) as ProductOptionItemRow[]) {
+      optionItems.set(optionItem.id, optionItem);
     }
   }
 
@@ -160,6 +212,10 @@ export async function calculateOrderQuote(
 
     const basePrice = toMoney(product.promo_price ?? product.price);
     let addonPerUnit = 0;
+    let optionPerUnit = 0;
+    const productOptionGroups = productOptions.get(item.product_id) ?? [];
+    const productOptionGroupIds = new Set(productOptionGroups.map((option) => option.id));
+    const selectedOptionCounts = new Map<string, number>();
 
     for (const addonSelection of item.addons ?? []) {
       if (!Number.isInteger(addonSelection.quantity) || addonSelection.quantity <= 0) {
@@ -183,7 +239,40 @@ export async function calculateOrderQuote(
       addonPerUnit += toMoney(addon.price) * addonSelection.quantity;
     }
 
-    subtotal += (basePrice + addonPerUnit) * item.quantity;
+    for (const optionSelection of item.options ?? []) {
+      if (!productOptionGroupIds.has(optionSelection.option_id)) {
+        throw new ApiError(409, 'PRODUCT_OPTION_NOT_ALLOWED', 'One or more required product options are invalid.', 'items');
+      }
+
+      const optionItem = optionItems.get(optionSelection.option_item_id);
+
+      if (!optionItem) {
+        throw new ApiError(404, 'PRODUCT_OPTION_ITEM_NOT_FOUND', 'One or more required product options no longer exist.', 'items');
+      }
+
+      if (!optionItem.is_available) {
+        throw new ApiError(409, 'PRODUCT_OPTION_ITEM_UNAVAILABLE', 'One or more required product options are unavailable.', 'items');
+      }
+
+      if (optionItem.option_id !== optionSelection.option_id) {
+        throw new ApiError(409, 'PRODUCT_OPTION_NOT_ALLOWED', 'One or more required product options are invalid.', 'items');
+      }
+
+      optionPerUnit += toMoney(optionItem.price_adjustment);
+      selectedOptionCounts.set(optionSelection.option_id, (selectedOptionCounts.get(optionSelection.option_id) ?? 0) + 1);
+    }
+
+    for (const optionGroup of productOptionGroups) {
+      const selectedCount = selectedOptionCounts.get(optionGroup.id) ?? 0;
+      const minSelect = Math.max(0, Number(optionGroup.min_select ?? 0));
+      const maxSelect = Math.max(minSelect, Number(optionGroup.max_select ?? minSelect));
+
+      if (selectedCount < minSelect || selectedCount > maxSelect) {
+        throw new ApiError(409, 'PRODUCT_OPTION_REQUIRED', 'One or more required product options are missing.', 'items');
+      }
+    }
+
+    subtotal += (basePrice + addonPerUnit + optionPerUnit) * item.quantity;
   }
 
   if (subtotal < settings.minOrder) {

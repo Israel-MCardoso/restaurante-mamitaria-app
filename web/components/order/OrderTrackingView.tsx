@@ -278,6 +278,48 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
                   ))}
                 </div>
               ) : null}
+
+              {order.items.length > 0 ? (
+                <div className="mt-8 border-t pt-6" style={{ borderColor: 'var(--line)' }}>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--brand)' }}>
+                    Itens do pedido
+                  </p>
+                  <div className="mt-4 space-y-4">
+                    {order.items.map((item) => (
+                      <div key={item.item_id} className="rounded-[1.25rem] border p-4" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)' }}>
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="font-semibold" style={{ color: 'var(--ink-strong)' }}>{item.product_name}</p>
+                            <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                              {item.quantity} x {formatMoney(item.unit_price)}
+                            </p>
+                            {item.options.length > 0 ? (
+                              <div className="mt-2 space-y-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                                {item.options.map((option) => (
+                                  <p key={`${item.item_id}-${option.option_id}`}>
+                                    {option.option_name}: {option.option_item_name}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : null}
+                            {item.addons.length > 0 ? (
+                              <div className="mt-2 space-y-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                                {item.addons.map((addon) => (
+                                  <p key={`${item.item_id}-${addon.addon_id}`}>
+                                    + {addon.name} x{addon.quantity}
+                                  </p>
+                                ))}
+                              </div>
+                            ) : null}
+                            {item.notes ? <p className="mt-2 text-sm" style={{ color: 'var(--ink-muted)' }}><strong style={{ color: 'var(--ink-strong)' }}>Obs.:</strong> {item.notes}</p> : null}
+                          </div>
+                          <strong style={{ color: 'var(--ink-strong)' }}>{formatMoney(item.subtotal)}</strong>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <aside className="soft-card rounded-[2rem] p-6">
@@ -436,4 +478,11 @@ function resolveQrImageSrc(qrCodeBase64: string) {
   }
 
   return `data:image/png;base64,${qrCodeBase64}`;
+}
+
+function formatMoney(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value);
 }

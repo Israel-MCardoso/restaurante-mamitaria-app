@@ -378,6 +378,10 @@ function mapSupabaseError(message: string) {
     { pattern: 'ADDON_NOT_FOUND', status: 404, code: 'ADDON_NOT_FOUND', field: 'items' },
     { pattern: 'ADDON_UNAVAILABLE', status: 409, code: 'ADDON_UNAVAILABLE', field: 'items' },
     { pattern: 'ADDON_NOT_ALLOWED', status: 409, code: 'ADDON_NOT_ALLOWED', field: 'items' },
+    { pattern: 'PRODUCT_OPTION_ITEM_NOT_FOUND', status: 404, code: 'PRODUCT_OPTION_ITEM_NOT_FOUND', field: 'items' },
+    { pattern: 'PRODUCT_OPTION_ITEM_UNAVAILABLE', status: 409, code: 'PRODUCT_OPTION_ITEM_UNAVAILABLE', field: 'items' },
+    { pattern: 'PRODUCT_OPTION_NOT_ALLOWED', status: 409, code: 'PRODUCT_OPTION_NOT_ALLOWED', field: 'items' },
+    { pattern: 'PRODUCT_OPTION_REQUIRED', status: 409, code: 'PRODUCT_OPTION_REQUIRED', field: 'items' },
     { pattern: 'DELIVERY_ADDRESS_REQUIRED', status: 400, code: 'DELIVERY_ADDRESS_REQUIRED', field: 'delivery_address' },
     { pattern: 'INVALID_ITEMS', status: 400, code: 'INVALID_ITEMS', field: 'items' },
     { pattern: 'INVALID_ITEM_QUANTITY', status: 400, code: 'INVALID_ITEM_QUANTITY', field: 'items' },
@@ -445,6 +449,14 @@ function humanizeErrorCode(code: string) {
       return 'One or more selected addons are unavailable.';
     case 'ADDON_NOT_ALLOWED':
       return 'One or more selected addons are not allowed for the chosen product.';
+    case 'PRODUCT_OPTION_ITEM_NOT_FOUND':
+      return 'One or more required product options no longer exist.';
+    case 'PRODUCT_OPTION_ITEM_UNAVAILABLE':
+      return 'One or more required product options are unavailable.';
+    case 'PRODUCT_OPTION_NOT_ALLOWED':
+      return 'One or more required product options are invalid for the chosen product.';
+    case 'PRODUCT_OPTION_REQUIRED':
+      return 'Select the required options before completing the order.';
     case 'DELIVERY_ADDRESS_REQUIRED':
       return 'Delivery address is required for delivery orders.';
     case 'INVALID_ITEMS':

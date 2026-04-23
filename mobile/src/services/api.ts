@@ -35,6 +35,25 @@ export interface AdminAddon {
   created_at?: string;
 }
 
+export interface AdminProductOptionItem {
+  id?: string;
+  option_id?: string;
+  name: string;
+  price_adjustment: number;
+  is_available?: boolean | null;
+  position?: number | null;
+}
+
+export interface AdminProductOptionGroup {
+  id?: string;
+  product_id?: string;
+  name: string;
+  min_select: number;
+  max_select: number;
+  position?: number | null;
+  items: AdminProductOptionItem[];
+}
+
 type AdminProductRelation = {
   name?: string | null;
   is_active?: boolean | null;
@@ -131,8 +150,8 @@ export type DashboardMetrics = {
 
 const OPERATIONAL_TIMEZONE = 'America/Sao_Paulo';
 const OPERATIONAL_OFFSET = '-03:00';
-const VALID_REVENUE_STATUSES = ['confirmed', 'preparing', 'shipped', 'delivered'];
-const VALID_PAID_PENDING_PAYMENT_STATUSES = ['paid', 'authorized', 'succeeded'];
+const NON_REVENUE_ORDER_STATUSES = ['cancelled'];
+const VALID_REVENUE_PAYMENT_STATUSES = ['paid', 'approved', 'authorized', 'succeeded'];
 const WEB_APP_URL = (process.env.EXPO_PUBLIC_WEB_APP_URL || 'https://restaurante-mamitaria-app.vercel.app').replace(/\/+$/, '');
 
 function getZonedDateParts(date = new Date()) {
@@ -176,11 +195,11 @@ function isRevenueEligibleOrder(order: DashboardOrderRow) {
   const normalizedStatus = (order.status ?? '').toLowerCase();
   const normalizedPaymentStatus = (order.payment_status ?? '').toLowerCase();
 
-  if (VALID_REVENUE_STATUSES.includes(normalizedStatus)) {
-    return true;
+  if (NON_REVENUE_ORDER_STATUSES.includes(normalizedStatus)) {
+    return false;
   }
 
-  return normalizedStatus === 'pending' && VALID_PAID_PENDING_PAYMENT_STATUSES.includes(normalizedPaymentStatus);
+  return VALID_REVENUE_PAYMENT_STATUSES.includes(normalizedPaymentStatus);
 }
 
 function calculateSalesMetrics(orders: DashboardOrderRow[]): SalesMetrics {
@@ -346,6 +365,148 @@ export const api = {
       };
     },
   },
+  productOptions: {
+    list: async (productId: string) => {
+      const { data: groupsData, error: groupsError } = await supabase
+        .from('product_options')
+        .select('id, product_id, name, min_select, max_select, position')
+        .eq('product_id', productId)
+        .order('position', { ascending: true });
+
+      if (groupsError) {
+        return {
+          data: null,
+          error: groupsError as ApiErrorLike,
+        };
+      }
+
+      const groups = (groupsData ?? []) as Array<Omit<AdminProductOptionGroup, 'items'>>;
+      const groupIds = groups.map((group) => group.id).filter((groupId): groupId is string => Boolean(groupId));
+
+      let itemsByGroupId = new Map<string, AdminProductOptionItem[]>();
+
+      if (groupIds.length > 0) {
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('product_option_items')
+          .select('id, option_id, name, price_adjustment, is_available, position')
+          .in('option_id', groupIds)
+          .order('position', { ascending: true });
+
+        if (itemsError) {
+          return {
+            data: null,
+            error: itemsError as ApiErrorLike,
+          };
+        }
+
+        itemsByGroupId = ((itemsData ?? []) as AdminProductOptionItem[]).reduce((map, item) => {
+          const currentItems = map.get(item.option_id ?? '') ?? [];
+          currentItems.push(item);
+          map.set(item.option_id ?? '', currentItems);
+          return map;
+        }, new Map<string, AdminProductOptionItem[]>());
+      }
+
+      return {
+        data: groups.map((group) => ({
+          ...group,
+          items: itemsByGroupId.get(group.id ?? '') ?? [],
+        })),
+        error: null,
+      };
+    },
+    replace: async (productId: string, groups: AdminProductOptionGroup[]) => {
+      const existingGroupsResponse = await supabase
+        .from('product_options')
+        .select('id')
+        .eq('product_id', productId);
+
+      const existingGroupsError = (existingGroupsResponse as { error: unknown }).error as ApiErrorLike | null;
+
+      if (existingGroupsError) {
+        return {
+          data: null,
+          error: existingGroupsError,
+        };
+      }
+
+      const existingGroupIds = (((existingGroupsResponse as { data?: Array<{ id: string }> | null }).data) ?? []).map((group) => group.id);
+
+      if (existingGroupIds.length > 0) {
+        const deleteItemsResponse = await supabase.from('product_option_items').delete().in('option_id', existingGroupIds);
+        const deleteItemsError = (deleteItemsResponse as { error: unknown }).error as ApiErrorLike | null;
+
+        if (deleteItemsError) {
+          return {
+            data: null,
+            error: deleteItemsError,
+          };
+        }
+      }
+
+      const deleteGroupsResponse = await supabase.from('product_options').delete().eq('product_id', productId);
+      const deleteGroupsError = (deleteGroupsResponse as { error: unknown }).error as ApiErrorLike | null;
+
+      if (deleteGroupsError) {
+        return {
+          data: null,
+          error: deleteGroupsError,
+        };
+      }
+
+      if (groups.length === 0) {
+        return {
+          data: [],
+          error: null,
+        };
+      }
+
+      const { data: insertedGroups, error: insertGroupsError } = await supabase
+        .from('product_options')
+        .insert(
+          groups.map((group, index) => ({
+            product_id: productId,
+            name: group.name,
+            min_select: 1,
+            max_select: 1,
+            position: index,
+          })),
+        )
+        .select('id, product_id, name, min_select, max_select, position');
+
+      if (insertGroupsError) {
+        return {
+          data: null,
+          error: insertGroupsError as ApiErrorLike,
+        };
+      }
+
+      const normalizedGroups = (insertedGroups ?? []) as Array<Omit<AdminProductOptionGroup, 'items'>>;
+      const itemRows = normalizedGroups.flatMap((group, groupIndex) =>
+        (groups[groupIndex]?.items ?? []).map((item, itemIndex) => ({
+          option_id: group.id,
+          name: item.name,
+          price_adjustment: item.price_adjustment,
+          is_available: item.is_available ?? true,
+          position: itemIndex,
+        })),
+      );
+
+      if (itemRows.length > 0) {
+        const insertItemsResponse = await supabase.from('product_option_items').insert(itemRows);
+        const insertItemsError = (insertItemsResponse as { error: unknown }).error as ApiErrorLike | null;
+
+        if (insertItemsError) {
+          return {
+            data: null,
+            error: insertItemsError,
+          };
+        }
+      }
+
+      return api.productOptions.list(productId);
+    },
+  },
   coupons: {
     list: (restaurantId: string) =>
       supabase.from('coupons').select('*').eq('restaurant_id', restaurantId),
@@ -407,8 +568,8 @@ export const api = {
 
       return {
         timezone: OPERATIONAL_TIMEZONE,
-        validStatuses: VALID_REVENUE_STATUSES,
-        paidPendingPaymentStatuses: VALID_PAID_PENDING_PAYMENT_STATUSES,
+        validStatuses: [],
+        paidPendingPaymentStatuses: VALID_REVENUE_PAYMENT_STATUSES,
         periods: {
           day: calculateSalesMetrics(dayOrders),
           month: calculateSalesMetrics(monthOrders),

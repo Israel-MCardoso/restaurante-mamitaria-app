@@ -43,6 +43,14 @@ export interface OrderItemAddon {
   total_price: number;
 }
 
+export interface OrderItemOptionSelection {
+  option_id: string;
+  option_name: string;
+  option_item_id: string;
+  option_item_name: string;
+  price_adjustment: number;
+}
+
 export interface OrderItem {
   item_id: string;
   product_id: string;
@@ -52,6 +60,7 @@ export interface OrderItem {
   subtotal: number;
   notes: string | null;
   addons: OrderItemAddon[];
+  options: OrderItemOptionSelection[];
 }
 
 export interface CustomerSnapshot {
@@ -115,11 +124,17 @@ export interface CreateOrderItemAddonSelection {
   quantity: number;
 }
 
+export interface CreateOrderItemOptionSelection {
+  option_id: string;
+  option_item_id: string;
+}
+
 export interface CreateOrderItemInput {
   product_id: string;
   quantity: number;
   notes?: string | null;
   addons?: CreateOrderItemAddonSelection[];
+  options?: CreateOrderItemOptionSelection[];
 }
 
 export interface CreateOrderRequest {
@@ -292,6 +307,55 @@ export function validateOrderItem(value: unknown, index = 0): ContractValidation
         issues.push({
           field: `items[${index}].addons[${addonIndex}].total_price`,
           message: 'total_price must be a non-negative number.',
+        });
+      }
+    });
+  }
+
+  if (!Array.isArray(value.options)) {
+    issues.push({ field: `items[${index}].options`, message: 'options must be an array.' });
+  } else {
+    value.options.forEach((option, optionIndex) => {
+      if (!isRecord(option)) {
+        issues.push({
+          field: `items[${index}].options[${optionIndex}]`,
+          message: 'Each option selection must be an object.',
+        });
+        return;
+      }
+
+      if (!isNonEmptyString(option.option_id)) {
+        issues.push({
+          field: `items[${index}].options[${optionIndex}].option_id`,
+          message: 'option_id is required.',
+        });
+      }
+
+      if (!isNonEmptyString(option.option_name)) {
+        issues.push({
+          field: `items[${index}].options[${optionIndex}].option_name`,
+          message: 'option_name is required.',
+        });
+      }
+
+      if (!isNonEmptyString(option.option_item_id)) {
+        issues.push({
+          field: `items[${index}].options[${optionIndex}].option_item_id`,
+          message: 'option_item_id is required.',
+        });
+      }
+
+      if (!isNonEmptyString(option.option_item_name)) {
+        issues.push({
+          field: `items[${index}].options[${optionIndex}].option_item_name`,
+          message: 'option_item_name is required.',
+        });
+      }
+
+      if (!isFiniteMoney(option.price_adjustment)) {
+        issues.push({
+          field: `items[${index}].options[${optionIndex}].price_adjustment`,
+          message: 'price_adjustment must be a non-negative number.',
         });
       }
     });
@@ -579,6 +643,39 @@ export function validateCreateOrderRequest(value: unknown): ContractValidationIs
               issues.push({
                 field: `items[${index}].addons[${addonIndex}].quantity`,
                 message: 'quantity must be a positive integer.',
+              });
+            }
+          });
+        }
+      }
+
+      if (item.options !== undefined) {
+        if (!Array.isArray(item.options)) {
+          issues.push({
+            field: `items[${index}].options`,
+            message: 'options must be an array when provided.',
+          });
+        } else {
+          item.options.forEach((option, optionIndex) => {
+            if (!isRecord(option)) {
+              issues.push({
+                field: `items[${index}].options[${optionIndex}]`,
+                message: 'Each option selection must be an object.',
+              });
+              return;
+            }
+
+            if (!isNonEmptyString(option.option_id)) {
+              issues.push({
+                field: `items[${index}].options[${optionIndex}].option_id`,
+                message: 'option_id is required.',
+              });
+            }
+
+            if (!isNonEmptyString(option.option_item_id)) {
+              issues.push({
+                field: `items[${index}].options[${optionIndex}].option_item_id`,
+                message: 'option_item_id is required.',
               });
             }
           });
