@@ -32,7 +32,7 @@ export interface PixPaymentResult {
 
 export async function createMercadoPagoPixPayment(
   order: CanonicalOrder,
-  payerEmail: string,
+  payerEmail: string | null,
   restaurantId: string,
 ): Promise<PixPaymentResult> {
   const integration = await requireEnabledRestaurantMercadoPagoIntegration(restaurantId);
@@ -40,11 +40,7 @@ export async function createMercadoPagoPixPayment(
 
   assertMercadoPagoProvider(integration.provider);
 
-  const normalizedPayerEmail = payerEmail.trim();
-
-  if (!normalizedPayerEmail) {
-    throw new ApiError(400, 'PIX_PAYER_EMAIL_REQUIRED', 'Customer email is required for Pix payments.', 'customer.email');
-  }
+  const normalizedPayerEmail = resolvePixPayerEmail(order, payerEmail);
 
   const requestBody = {
     transaction_amount: order.total_amount,
@@ -134,6 +130,19 @@ function buildPixExpirationTimestamp() {
   const safeMinutes = Number.isFinite(expirationMinutes) ? Math.min(Math.max(expirationMinutes, 30), 43200) : 60;
   const expirationDate = new Date(Date.now() + safeMinutes * 60 * 1000);
   return expirationDate.toISOString();
+}
+
+function resolvePixPayerEmail(order: CanonicalOrder, payerEmail: string | null) {
+  const normalizedEmail = payerEmail?.trim().toLowerCase() ?? '';
+
+  if (normalizedEmail) {
+    return normalizedEmail;
+  }
+
+  const sanitizedPhone = order.customer.phone.replace(/\D/g, '').slice(-8) || 'cliente';
+  const orderFragment = order.order_id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 12).toLowerCase() || 'pedido';
+
+  return `pix-${sanitizedPhone}-${orderFragment}@checkout.familiamineira.app`;
 }
 
 function extractFirstName(name: string) {

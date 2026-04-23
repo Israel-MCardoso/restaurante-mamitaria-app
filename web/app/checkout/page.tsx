@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, LoaderCircle, ShieldCheck, ShoppingBag, TicketPercent, Truck } from 'lucide-react';
+import { ClipboardList, LoaderCircle, ShieldCheck, ShoppingBag, Store, TicketPercent, Truck } from 'lucide-react';
 import type { CreateOrderRequest } from '@/lib/contracts';
 import { useCart } from '@/contexts/CartContext';
 import { useStorefront } from '@/contexts/StorefrontContext';
@@ -48,10 +48,10 @@ export default function CheckoutPage() {
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    email: '',
     street: '',
     number: '',
     city: '',
+    fulfillmentType: 'delivery',
     paymentMethod: 'pix',
     couponCode: '',
   });
@@ -63,17 +63,20 @@ export default function CheckoutPage() {
 
     return {
       restaurant_id: restaurant.id,
-      fulfillment_type: 'delivery',
-      delivery_address: {
-        street: formData.street.trim(),
-        number: formData.number.trim(),
-        neighborhood: null,
-        city: formData.city.trim(),
-        state: null,
-        zip_code: null,
-        complement: null,
-        reference: null,
-      },
+      fulfillment_type: formData.fulfillmentType === 'pickup' ? 'pickup' : 'delivery',
+      delivery_address:
+        formData.fulfillmentType === 'pickup'
+          ? null
+          : {
+              street: formData.street.trim(),
+              number: formData.number.trim(),
+              neighborhood: null,
+              city: formData.city.trim(),
+              state: null,
+              zip_code: null,
+              complement: null,
+              reference: null,
+            },
       items: items.map((item) => ({
         product_id: item.id,
         quantity: item.quantity,
@@ -82,7 +85,7 @@ export default function CheckoutPage() {
       })),
       coupon_code: formData.couponCode.trim() || null,
     };
-  }, [formData.city, formData.couponCode, formData.number, formData.street, items, restaurant?.id]);
+  }, [formData.city, formData.couponCode, formData.fulfillmentType, formData.number, formData.street, items, restaurant?.id]);
 
   useEffect(() => {
     if (!quotePayload) {
@@ -166,22 +169,25 @@ export default function CheckoutPage() {
     const payload: CreateOrderRequest = {
       restaurant_id: restaurant.id,
       payment_method: normalizePaymentMethod(formData.paymentMethod),
-      fulfillment_type: 'delivery',
+      fulfillment_type: formData.fulfillmentType === 'pickup' ? 'pickup' : 'delivery',
       customer: {
         name: formData.name.trim(),
         phone: formData.phone.trim(),
-        email: formData.email.trim() || null,
+        email: null,
       },
-      delivery_address: {
-        street: formData.street.trim(),
-        number: formData.number.trim(),
-        neighborhood: null,
-        city: formData.city.trim(),
-        state: null,
-        zip_code: null,
-        complement: null,
-        reference: null,
-      },
+      delivery_address:
+        formData.fulfillmentType === 'pickup'
+          ? null
+          : {
+              street: formData.street.trim(),
+              number: formData.number.trim(),
+              neighborhood: null,
+              city: formData.city.trim(),
+              state: null,
+              zip_code: null,
+              complement: null,
+              reference: null,
+            },
       items: items.map((item) => ({
         product_id: item.id,
         quantity: item.quantity,
@@ -253,10 +259,12 @@ export default function CheckoutPage() {
                     className="mt-4 max-w-[12ch] text-[clamp(3.2rem,6vw,5rem)] leading-[0.94] tracking-[-0.05em]"
                     style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
                   >
-                    Dados para entrega.
+                    {formData.fulfillmentType === 'pickup' ? 'Dados para retirada.' : 'Dados para entrega.'}
                   </h1>
                   <p className="mt-5 max-w-2xl text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-                    Preencha seus dados para confirmar a entrega e concluir seu pedido com seguranca.
+                    {formData.fulfillmentType === 'pickup'
+                      ? 'Preencha seus dados para confirmar a retirada e concluir seu pedido com seguranca.'
+                      : 'Preencha seus dados para confirmar a entrega e concluir seu pedido com seguranca.'}
                   </p>
 
                   <div className="mt-7 grid gap-3 sm:grid-cols-3">
@@ -299,35 +307,92 @@ export default function CheckoutPage() {
                       />
                     </div>
 
-                    <Field
-                      label="E-mail para receber o Pix"
-                      value={formData.email}
-                      onChange={(value) => setFormData((current) => ({ ...current, email: value }))}
-                      type="email"
-                      autoComplete="email"
-                    />
-
-                    <div className="grid gap-4 sm:grid-cols-[1fr_0.45fr]">
-                      <Field
-                        label="Rua"
-                        value={formData.street}
-                        onChange={(value) => setFormData((current) => ({ ...current, street: value }))}
-                        autoComplete="address-line1"
-                      />
-                      <Field
-                        label="Numero"
-                        value={formData.number}
-                        onChange={(value) => setFormData((current) => ({ ...current, number: value }))}
-                        autoComplete="address-line2"
-                      />
+                    <div className="grid gap-3">
+                      <span className="text-sm font-semibold" style={{ color: 'var(--ink-strong)' }}>
+                        Recebimento
+                      </span>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {[
+                          {
+                            value: 'delivery',
+                            title: 'Entrega',
+                            copy: 'Informe o endereco para calcular a taxa e concluir o pedido.',
+                            icon: Truck,
+                          },
+                          {
+                            value: 'pickup',
+                            title: 'Retirada',
+                            copy: 'Retire no local sem taxa de entrega.',
+                            icon: Store,
+                          },
+                        ].map((option) => {
+                          const Icon = option.icon;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={() => setFormData((current) => ({ ...current, fulfillmentType: option.value }))}
+                              className="rounded-[1.25rem] border p-4 text-left transition-colors"
+                              style={{
+                                backgroundColor:
+                                  formData.fulfillmentType === option.value
+                                    ? 'rgba(200, 135, 63, 0.14)'
+                                    : 'rgba(255,250,244,0.56)',
+                                borderColor:
+                                  formData.fulfillmentType === option.value
+                                    ? 'rgba(200, 135, 63, 0.5)'
+                                    : 'var(--line)',
+                              }}
+                            >
+                              <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--brand)' }}>
+                                <Icon className="h-4 w-4" />
+                                {option.title}
+                              </span>
+                              <span className="mt-2 block text-sm leading-6" style={{ color: 'var(--ink-muted)' }}>
+                                {option.copy}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <Field
-                      label="Cidade"
-                      value={formData.city}
-                      onChange={(value) => setFormData((current) => ({ ...current, city: value }))}
-                      autoComplete="address-level2"
-                    />
+                    {formData.fulfillmentType === 'delivery' ? (
+                      <>
+                        <div className="grid gap-4 sm:grid-cols-[1fr_0.45fr]">
+                          <Field
+                            label="Rua"
+                            value={formData.street}
+                            onChange={(value) => setFormData((current) => ({ ...current, street: value }))}
+                            autoComplete="address-line1"
+                          />
+                          <Field
+                            label="Numero"
+                            value={formData.number}
+                            onChange={(value) => setFormData((current) => ({ ...current, number: value }))}
+                            autoComplete="address-line2"
+                          />
+                        </div>
+
+                        <Field
+                          label="Cidade"
+                          value={formData.city}
+                          onChange={(value) => setFormData((current) => ({ ...current, city: value }))}
+                          autoComplete="address-level2"
+                        />
+                      </>
+                    ) : (
+                      <div
+                        className="rounded-[1.25rem] border p-4 text-sm leading-6"
+                        style={{
+                          borderColor: 'var(--line)',
+                          backgroundColor: 'rgba(255,250,244,0.52)',
+                          color: 'var(--ink-muted)',
+                        }}
+                      >
+                        A retirada no local nao usa endereco nem taxa de entrega. O pagamento continua sendo definido abaixo.
+                      </div>
+                    )}
 
                     <div className="grid gap-2">
                       <Field
@@ -443,7 +508,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="inline-flex items-center gap-2" style={{ color: 'var(--ink-muted)' }}>
-                        <Truck className="h-4 w-4" /> Taxa de entrega
+                        {formData.fulfillmentType === 'pickup' ? <Store className="h-4 w-4" /> : <Truck className="h-4 w-4" />} {formData.fulfillmentType === 'pickup' ? 'Retirada' : 'Taxa de entrega'}
                       </span>
                       <strong>{quoteLoading ? 'Calculando...' : formatMoney(displayDeliveryFee)}</strong>
                     </div>
@@ -469,7 +534,9 @@ export default function CheckoutPage() {
                   >
                     {quoteMessage
                       ? quoteMessage
-                      : quote?.delivery.distanceKm
+                      : formData.fulfillmentType === 'pickup'
+                        ? 'Retirada selecionada. O pedido sera preparado sem cobranca de entrega.'
+                        : quote?.delivery.distanceKm
                         ? `Distancia estimada: ${quote.delivery.distanceKm.toFixed(1)} km.`
                         : 'Taxa de entrega, descontos e valor final sao confirmados durante a finalizacao do pedido.'}
                   </div>

@@ -332,12 +332,7 @@ async function reconcilePixPaymentStatus(order: CanonicalOrder): Promise<Canonic
 function extractPixPayerEmail(payload: unknown) {
   const customer = (payload as { customer?: { email?: string | null } })?.customer;
   const email = customer?.email?.trim();
-
-  if (!email) {
-    throw new ApiError(400, 'PIX_PAYER_EMAIL_REQUIRED', 'Informe um e-mail válido para receber o pagamento via Pix.', 'customer.email');
-  }
-
-  return email;
+  return email || null;
 }
 
 async function resolveOrderRestaurantId(orderId: string, payload: unknown) {

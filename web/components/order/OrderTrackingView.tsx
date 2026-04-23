@@ -292,7 +292,24 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
                   <p className="font-semibold">{paymentStatusMap[order.payment_status]}</p>
                 </div>
 
-                {order.payment_method === 'pix' && order.payment_data?.copy_paste_code ? (
+                {order.payment_method === 'pix' && order.payment_status === 'paid' ? (
+                  <div
+                    className="rounded-[1.25rem] border p-4"
+                    style={{
+                      borderColor: 'rgba(52, 157, 89, 0.28)',
+                      backgroundColor: 'rgba(52, 157, 89, 0.08)',
+                    }}
+                  >
+                    <p className="font-semibold" style={{ color: '#237241' }}>
+                      Pagamento efetuado
+                    </p>
+                    <p className="mt-1 text-sm leading-6" style={{ color: 'var(--ink-muted)' }}>
+                      Pix aprovado com sucesso. Agora e so acompanhar o preparo do pedido.
+                    </p>
+                  </div>
+                ) : null}
+
+                {order.payment_method === 'pix' && order.payment_status !== 'paid' && order.payment_data?.copy_paste_code ? (
                   <div className="pt-2">
                     <p className="mb-3 text-sm" style={{ color: 'var(--ink-muted)' }}>
                       Use o código Pix abaixo para concluir o pagamento.
@@ -342,6 +359,11 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
                       <p style={{ color: 'var(--ink)' }}>
                         {order.delivery_address.street}, {order.delivery_address.number} - {order.delivery_address.city}
                       </p>
+                    </div>
+                  ) : order.fulfillment_type === 'pickup' ? (
+                    <div className="flex gap-3">
+                      <Package className="w-5" style={{ color: 'var(--ink-muted)' }} />
+                      <p style={{ color: 'var(--ink)' }}>Retirada no local</p>
                     </div>
                   ) : null}
                   <div className="flex gap-3">

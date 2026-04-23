@@ -490,13 +490,6 @@ export function validateCreateOrderRequest(value: unknown): ContractValidationIs
       issues.push({ field: 'customer.phone', message: 'customer.phone is required.' });
     }
 
-    if (value.payment_method === 'pix' && !isNonEmptyString(value.customer.email)) {
-      issues.push({
-        field: 'customer.email',
-        message: 'customer.email is required for Pix payments.',
-      });
-    }
-
     if (value.customer.email !== undefined && value.customer.email !== null && typeof value.customer.email !== 'string') {
       issues.push({ field: 'customer.email', message: 'customer.email must be a string or null.' });
     }
