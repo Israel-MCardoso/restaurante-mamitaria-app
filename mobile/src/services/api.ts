@@ -76,6 +76,13 @@ export interface AdminRestaurant {
   logo_url?: string | null;
   banner_url?: string | null;
   is_active?: boolean | null;
+  settings?: {
+    delivery_fee?: number | string | null;
+    min_order?: number | string | null;
+    estimated_time_minutes?: number | string | null;
+    delivery_pricing_mode?: 'fixed' | 'distance' | null;
+    delivery_fee_per_km?: number | string | null;
+  } | null;
 }
 
 export interface MercadoPagoIntegrationStatus {

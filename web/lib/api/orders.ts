@@ -15,6 +15,7 @@ import {
 } from '@/lib/payments/mercado-pago-webhook';
 import { getRestaurantMercadoPagoIntegration } from '@/lib/payments/mercado-pago-integration';
 import { logMercadoPagoEvent } from '@/lib/payments/mercado-pago-security';
+import { calculateOrderQuote } from '@/lib/checkout/pricing';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 interface CreateOrderRpcResponse {
@@ -52,9 +53,15 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
   const supabase = getSupabaseAdminClient();
   const normalizedIdempotencyKey = idempotencyKey.trim();
   const requestHash = hashRequestPayload(payload);
+  const orderQuote = await calculateOrderQuote(payload as any, { strictCoupon: true });
+  const securePayload = {
+    ...(payload as Record<string, unknown>),
+    delivery_fee_override: orderQuote.deliveryFee,
+    discount_amount_override: orderQuote.discountAmount,
+  };
 
   const { data, error } = await supabase.rpc('create_canonical_order', {
-    payload,
+    payload: securePayload,
     request_idempotency_key: normalizedIdempotencyKey,
     request_hash: requestHash,
   } as never);
@@ -393,6 +400,11 @@ function mapSupabaseError(message: string) {
     { pattern: 'MISSING_MERCADO_PAGO_ACCESS_TOKEN', status: 500, code: 'MISSING_MERCADO_PAGO_ACCESS_TOKEN' },
     { pattern: 'MERCADO_PAGO_NOT_CONFIGURED', status: 409, code: 'MERCADO_PAGO_NOT_CONFIGURED' },
     { pattern: 'MERCADO_PAGO_ACCESS_TOKEN_MISSING', status: 409, code: 'MERCADO_PAGO_ACCESS_TOKEN_MISSING' },
+    { pattern: 'COUPON_NOT_FOUND', status: 404, code: 'COUPON_NOT_FOUND', field: 'coupon_code' },
+    { pattern: 'COUPON_INACTIVE', status: 409, code: 'COUPON_INACTIVE', field: 'coupon_code' },
+    { pattern: 'COUPON_EXPIRED', status: 409, code: 'COUPON_EXPIRED', field: 'coupon_code' },
+    { pattern: 'COUPON_LIMIT_REACHED', status: 409, code: 'COUPON_LIMIT_REACHED', field: 'coupon_code' },
+    { pattern: 'COUPON_MIN_ORDER_NOT_REACHED', status: 409, code: 'COUPON_MIN_ORDER_NOT_REACHED', field: 'coupon_code' },
     { pattern: 'INVALID_PAYMENT_PROVIDER', status: 400, code: 'INVALID_PAYMENT_PROVIDER' },
     { pattern: 'IDEMPOTENCY_RESPONSE_SYNC_FAILED', status: 500, code: 'IDEMPOTENCY_RESPONSE_SYNC_FAILED' },
   ];
@@ -464,6 +476,16 @@ function humanizeErrorCode(code: string) {
       return 'Este restaurante ainda não configurou o Pix.';
     case 'MERCADO_PAGO_ACCESS_TOKEN_MISSING':
       return 'Este restaurante ainda não concluiu a integração do Pix.';
+    case 'COUPON_NOT_FOUND':
+      return 'Cupom nao encontrado.';
+    case 'COUPON_INACTIVE':
+      return 'Este cupom nao esta ativo.';
+    case 'COUPON_EXPIRED':
+      return 'Este cupom expirou.';
+    case 'COUPON_LIMIT_REACHED':
+      return 'Este cupom atingiu o limite de uso.';
+    case 'COUPON_MIN_ORDER_NOT_REACHED':
+      return 'Seu pedido ainda nao atingiu o valor minimo para este cupom.';
     case 'INVALID_PAYMENT_PROVIDER':
       return 'O provedor de pagamento informado não é suportado.';
     case 'IDEMPOTENCY_RESPONSE_SYNC_FAILED':

@@ -26,6 +26,7 @@ import { colors } from '../theme/colors';
 import { radius } from '../theme/radius';
 import { spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
+import { parseCurrencyInput } from '../utils/format';
 
 async function launchSettingsImagePicker() {
   const pickerOptions: ImagePicker.ImagePickerOptions = {
@@ -188,6 +189,14 @@ export default function SettingsScreen() {
       address: restaurant.address,
       logo_url: restaurant.logo_url,
       banner_url: restaurant.banner_url,
+      settings: {
+        ...(restaurant.settings || {}),
+        delivery_fee: Number(parseCurrencyInput(String(restaurant.settings?.delivery_fee ?? 0))) || 0,
+        min_order: Number(parseCurrencyInput(String(restaurant.settings?.min_order ?? 0))) || 0,
+        estimated_time_minutes: Number(String(restaurant.settings?.estimated_time_minutes ?? 45)) || 45,
+        delivery_pricing_mode: restaurant.settings?.delivery_pricing_mode === 'distance' ? 'distance' : 'fixed',
+        delivery_fee_per_km: Number(parseCurrencyInput(String(restaurant.settings?.delivery_fee_per_km ?? 0))) || 0,
+      },
     });
 
     if (error) {
@@ -463,6 +472,112 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <Input
+              label="Taxa base de entrega"
+              value={String(restaurant.settings?.delivery_fee ?? '')}
+              keyboardType="decimal-pad"
+              onChangeText={(value) =>
+                setRestaurant((current: any) => ({
+                  ...current,
+                  settings: { ...(current.settings || {}), delivery_fee: parseCurrencyInput(value) },
+                }))
+              }
+            />
+          </View>
+          <View style={styles.rowSpacer} />
+          <View style={styles.flex}>
+            <Input
+              label="Pedido mínimo"
+              value={String(restaurant.settings?.min_order ?? '')}
+              keyboardType="decimal-pad"
+              onChangeText={(value) =>
+                setRestaurant((current: any) => ({
+                  ...current,
+                  settings: { ...(current.settings || {}), min_order: parseCurrencyInput(value) },
+                }))
+              }
+            />
+          </View>
+        </View>
+        <View style={styles.row}>
+          <View style={styles.flex}>
+            <Input
+              label="Prazo médio (min)"
+              value={String(restaurant.settings?.estimated_time_minutes ?? 45)}
+              keyboardType="number-pad"
+              onChangeText={(value) =>
+                setRestaurant((current: any) => ({
+                  ...current,
+                  settings: { ...(current.settings || {}), estimated_time_minutes: value.replace(/[^\d]/g, '') },
+                }))
+              }
+            />
+          </View>
+          <View style={styles.rowSpacer} />
+          <View style={styles.flex}>
+            <Input
+              label="Valor por km"
+              value={String(restaurant.settings?.delivery_fee_per_km ?? '')}
+              keyboardType="decimal-pad"
+              onChangeText={(value) =>
+                setRestaurant((current: any) => ({
+                  ...current,
+                  settings: { ...(current.settings || {}), delivery_fee_per_km: parseCurrencyInput(value) },
+                }))
+              }
+            />
+          </View>
+        </View>
+        <Text style={styles.sectionLabel}>Cálculo da entrega</Text>
+        <View style={styles.modeRow}>
+          <TouchableOpacity
+            style={[
+              styles.modeButton,
+              (restaurant.settings?.delivery_pricing_mode ?? 'fixed') === 'fixed' && styles.modeButtonActive,
+            ]}
+            onPress={() =>
+              setRestaurant((current: any) => ({
+                ...current,
+                settings: { ...(current.settings || {}), delivery_pricing_mode: 'fixed' },
+              }))
+            }
+          >
+            <Text
+              style={[
+                styles.modeButtonText,
+                (restaurant.settings?.delivery_pricing_mode ?? 'fixed') === 'fixed' && styles.modeButtonTextActive,
+              ]}
+            >
+              Taxa fixa
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.modeButton,
+              restaurant.settings?.delivery_pricing_mode === 'distance' && styles.modeButtonActive,
+            ]}
+            onPress={() =>
+              setRestaurant((current: any) => ({
+                ...current,
+                settings: { ...(current.settings || {}), delivery_pricing_mode: 'distance' },
+              }))
+            }
+          >
+            <Text
+              style={[
+                styles.modeButtonText,
+                restaurant.settings?.delivery_pricing_mode === 'distance' && styles.modeButtonTextActive,
+              ]}
+            >
+              Base + km
+            </Text>
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.helperText}>
+          Em &quot;Base + km&quot;, o site estima a distância com base no endereço da loja e do cliente. Se a estimativa não estiver disponível, a taxa base continua valendo.
+        </Text>
         <Button title="Salvar alterações" onPress={handleSave} loading={saving} />
       </Card>
 
@@ -665,6 +780,43 @@ const styles = StyleSheet.create({
   },
   rowSpacer: {
     width: spacing.md,
+  },
+  sectionLabel: {
+    ...typography.body,
+    color: colors.darkText,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  modeRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  modeButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modeButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  modeButtonText: {
+    ...typography.button,
+    color: colors.primary,
+  },
+  modeButtonTextActive: {
+    color: colors.white,
+  },
+  helperText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
+    lineHeight: 20,
   },
   actionFlex: {
     flex: 1,

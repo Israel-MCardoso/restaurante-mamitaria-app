@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ClipboardList, LoaderCircle, ShieldCheck, ShoppingBag } from 'lucide-react';
+import { ClipboardList, LoaderCircle, ShieldCheck, ShoppingBag, TicketPercent, Truck } from 'lucide-react';
 import type { CreateOrderRequest } from '@/lib/contracts';
 import { useCart } from '@/contexts/CartContext';
 import { useStorefront } from '@/contexts/StorefrontContext';
@@ -17,12 +17,34 @@ import {
   shouldResetPendingOrderAttempt,
 } from '@/lib/orders/public';
 
+type CheckoutQuote = {
+  subtotal: number;
+  deliveryFee: number;
+  discountAmount: number;
+  totalAmount: number;
+  estimatedTimeMinutes: number;
+  coupon: {
+    code: string | null;
+    applied: boolean;
+    message: string | null;
+  };
+  delivery: {
+    mode: 'fixed' | 'distance';
+    resolvedMode: 'fixed' | 'distance';
+    distanceKm: number | null;
+    message: string | null;
+  };
+};
+
 export default function CheckoutPage() {
   const { items, clearCart, total, itemCount } = useCart();
   const { restaurant } = useStorefront();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
+  const [quote, setQuote] = useState<CheckoutQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteMessage, setQuoteMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -31,7 +53,100 @@ export default function CheckoutPage() {
     number: '',
     city: '',
     paymentMethod: 'pix',
+    couponCode: '',
   });
+
+  const quotePayload = useMemo(() => {
+    if (!restaurant?.id || items.length === 0) {
+      return null;
+    }
+
+    return {
+      restaurant_id: restaurant.id,
+      fulfillment_type: 'delivery',
+      delivery_address: {
+        street: formData.street.trim(),
+        number: formData.number.trim(),
+        neighborhood: null,
+        city: formData.city.trim(),
+        state: null,
+        zip_code: null,
+        complement: null,
+        reference: null,
+      },
+      items: items.map((item) => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        addons: normalizeAddonSelections(item.addons),
+        notes: item.notes?.trim() || null,
+      })),
+      coupon_code: formData.couponCode.trim() || null,
+    };
+  }, [formData.city, formData.couponCode, formData.number, formData.street, items, restaurant?.id]);
+
+  useEffect(() => {
+    if (!quotePayload) {
+      setQuote(null);
+      setQuoteMessage(null);
+      return;
+    }
+
+    let isCancelled = false;
+    const controller = new AbortController();
+
+    const timer = window.setTimeout(async () => {
+      setQuoteLoading(true);
+      setQuoteMessage(null);
+
+      try {
+        const response = await fetch('/api/orders/quote', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(quotePayload),
+          signal: controller.signal,
+        });
+
+        const body = (await response.json()) as
+          | CheckoutQuote
+          | { code?: string; message?: string; field?: string };
+
+        if (!response.ok) {
+          if (!isCancelled) {
+            setQuote(null);
+            setQuoteMessage(
+              'message' in body && body.message
+                ? body.message
+                : 'Nao foi possivel atualizar os valores agora.',
+            );
+          }
+          return;
+        }
+
+        if (!isCancelled) {
+          const nextQuote = body as CheckoutQuote;
+          setQuote(nextQuote);
+          setQuoteMessage(nextQuote.coupon.message || nextQuote.delivery.message || null);
+        }
+      } catch (error) {
+        if (!isCancelled && !(error instanceof DOMException && error.name === 'AbortError')) {
+          setQuote(null);
+          setQuoteMessage('Nao foi possivel atualizar os valores agora.');
+        }
+      } finally {
+        if (!isCancelled) {
+          setQuoteLoading(false);
+        }
+      }
+    }, 350);
+
+    return () => {
+      isCancelled = true;
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [quotePayload]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -41,7 +156,7 @@ export default function CheckoutPage() {
     }
 
     if (!restaurant?.id) {
-      setFeedbackMessage('Volte ao cardápio e escolha seus itens novamente antes de finalizar.');
+      setFeedbackMessage('Volte ao cardapio e escolha seus itens novamente antes de finalizar.');
       return;
     }
 
@@ -74,7 +189,7 @@ export default function CheckoutPage() {
         notes: item.notes?.trim() || null,
       })),
       notes: null,
-      coupon_code: null,
+      coupon_code: formData.couponCode.trim() || null,
     };
     const requestFingerprint = JSON.stringify(payload);
 
@@ -96,29 +211,33 @@ export default function CheckoutPage() {
           clearPendingOrderAttempt();
         }
       } else {
-        setFeedbackMessage('Não foi possível concluir seu pedido agora. Confira sua conexão e tente novamente em instantes.');
+        setFeedbackMessage('Nao foi possivel concluir seu pedido agora. Confira sua conexao e tente novamente em instantes.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const displayDeliveryFee = quote?.deliveryFee ?? 0;
+  const displayDiscount = quote?.discountAmount ?? 0;
+  const displayTotal = quote?.totalAmount ?? total;
+
   return (
     <>
-      <AppHeader
-        backHref={restaurant?.slug ? `/${restaurant.slug}` : '/'}
-        backLabel="Voltar ao cardápio"
-      />
-      <main className="page-shell pt-10">
-        <section className="section-shell min-h-screen pb-28 lg:pb-0">
+      <AppHeader backHref={restaurant?.slug ? `/${restaurant.slug}` : '/'} backLabel="Voltar ao cardapio" />
+      <main className="page-shell pt-3 sm:pt-4">
+        <section className="min-h-screen pb-20 pt-4 sm:pb-24 sm:pt-6 lg:pb-0">
           <div className="content-shell">
             {items.length === 0 ? (
               <div className="soft-card rounded-[2rem] p-10 text-center">
-                <h1 className="text-[3rem] leading-none tracking-[-0.05em]" style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}>
-                  Seu carrinho está vazio.
+                <h1
+                  className="text-[3rem] leading-none tracking-[-0.05em]"
+                  style={{ color: 'var(--ink-strong)', fontFamily: 'var(--font-display)' }}
+                >
+                  Seu carrinho esta vazio.
                 </h1>
                 <p className="mt-4 text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-                  Adicione alguns itens antes de seguir para a finalização do pedido.
+                  Adicione alguns itens antes de seguir para a finalizacao do pedido.
                 </p>
                 {restaurant?.slug ? (
                   <Link href={`/${restaurant.slug}`} className="premium-button mt-6 px-8 py-4 sm:w-auto">
@@ -137,13 +256,13 @@ export default function CheckoutPage() {
                     Dados para entrega.
                   </h1>
                   <p className="mt-5 max-w-2xl text-base leading-7" style={{ color: 'var(--ink-muted)' }}>
-                    Preencha seus dados para confirmar a entrega e concluir seu pedido com segurança.
+                    Preencha seus dados para confirmar a entrega e concluir seu pedido com seguranca.
                   </p>
 
                   <div className="mt-7 grid gap-3 sm:grid-cols-3">
                     {[
                       { icon: ClipboardList, text: 'Pedido enviado com praticidade' },
-                      { icon: ShieldCheck, text: 'Valores confirmados antes da finalização' },
+                      { icon: ShieldCheck, text: 'Valores confirmados antes da finalizacao' },
                       { icon: ShoppingBag, text: `${itemCount} itens no carrinho` },
                     ].map((item) => {
                       const Icon = item.icon;
@@ -151,7 +270,11 @@ export default function CheckoutPage() {
                         <div
                           key={item.text}
                           className="flex items-center gap-2 rounded-full border px-4 py-2 text-sm"
-                          style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)', color: 'var(--ink-muted)' }}
+                          style={{
+                            borderColor: 'var(--line)',
+                            backgroundColor: 'rgba(255,250,244,0.52)',
+                            color: 'var(--ink-muted)',
+                          }}
                         >
                           <Icon className="h-4 w-4 shrink-0" style={{ color: 'var(--brand)' }} />
                           <span>{item.text}</span>
@@ -177,7 +300,7 @@ export default function CheckoutPage() {
                     </div>
 
                     <Field
-                        label="E-mail para receber o Pix"
+                      label="E-mail para receber o Pix"
                       value={formData.email}
                       onChange={(value) => setFormData((current) => ({ ...current, email: value }))}
                       type="email"
@@ -192,7 +315,7 @@ export default function CheckoutPage() {
                         autoComplete="address-line1"
                       />
                       <Field
-                        label="Número"
+                        label="Numero"
                         value={formData.number}
                         onChange={(value) => setFormData((current) => ({ ...current, number: value }))}
                         autoComplete="address-line2"
@@ -206,15 +329,27 @@ export default function CheckoutPage() {
                       autoComplete="address-level2"
                     />
 
+                    <div className="grid gap-2">
+                      <Field
+                        label="Cupom"
+                        value={formData.couponCode}
+                        onChange={(value) => setFormData((current) => ({ ...current, couponCode: value.toUpperCase() }))}
+                        autoComplete="off"
+                      />
+                      <p className="text-sm leading-6" style={{ color: 'var(--ink-muted)' }}>
+                        Se voce tiver um cupom ativo, informe aqui antes de finalizar o pedido.
+                      </p>
+                    </div>
+
                     <div className="grid gap-3">
                       <span className="text-sm font-semibold" style={{ color: 'var(--ink-strong)' }}>
                         Pagamento
                       </span>
                       <div className="grid gap-3 sm:grid-cols-3">
                         {[
-                          { value: 'pix', title: 'Pix', copy: 'Receba o QR Code e o código para pagar logo após o pedido.' },
+                          { value: 'pix', title: 'Pix', copy: 'Receba o QR Code e o codigo para pagar logo apos o pedido.' },
                           { value: 'cash', title: 'Dinheiro', copy: 'Pagamento na entrega.' },
-                          { value: 'card', title: 'Cartão', copy: 'Pagamento na entrega.' },
+                          { value: 'card', title: 'Cartao', copy: 'Pagamento na entrega.' },
                         ].map((option) => (
                           <button
                             key={option.value}
@@ -223,12 +358,19 @@ export default function CheckoutPage() {
                             className="rounded-[1.25rem] border p-4 text-left transition-colors"
                             style={{
                               backgroundColor:
-                                formData.paymentMethod === option.value ? 'rgba(200, 135, 63, 0.14)' : 'rgba(255,250,244,0.56)',
+                                formData.paymentMethod === option.value
+                                  ? 'rgba(200, 135, 63, 0.14)'
+                                  : 'rgba(255,250,244,0.56)',
                               borderColor:
-                                formData.paymentMethod === option.value ? 'rgba(200, 135, 63, 0.5)' : 'var(--line)',
+                                formData.paymentMethod === option.value
+                                  ? 'rgba(200, 135, 63, 0.5)'
+                                  : 'var(--line)',
                             }}
                           >
-                            <span className="block text-sm font-semibold uppercase tracking-[0.18em]" style={{ color: 'var(--brand)' }}>
+                            <span
+                              className="block text-sm font-semibold uppercase tracking-[0.18em]"
+                              style={{ color: 'var(--brand)' }}
+                            >
                               {option.title}
                             </span>
                             <span className="mt-2 block text-sm leading-6" style={{ color: 'var(--ink-muted)' }}>
@@ -297,16 +439,39 @@ export default function CheckoutPage() {
                   <div className="mt-6 grid gap-3 text-sm">
                     <div className="flex justify-between">
                       <span style={{ color: 'var(--ink-muted)' }}>Subtotal dos itens</span>
-                      <strong>{formatMoney(total)}</strong>
+                      <strong>{formatMoney(quote?.subtotal ?? total)}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="inline-flex items-center gap-2" style={{ color: 'var(--ink-muted)' }}>
+                        <Truck className="h-4 w-4" /> Taxa de entrega
+                      </span>
+                      <strong>{quoteLoading ? 'Calculando...' : formatMoney(displayDeliveryFee)}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="inline-flex items-center gap-2" style={{ color: 'var(--ink-muted)' }}>
+                        <TicketPercent className="h-4 w-4" /> Desconto
+                      </span>
+                      <strong>{quoteLoading ? 'Calculando...' : `- ${formatMoney(displayDiscount)}`}</strong>
                     </div>
                     <div className="flex justify-between border-t pt-4 text-lg" style={{ borderColor: 'var(--line)', color: 'var(--ink-strong)' }}>
                       <span>Total final</span>
-                      <strong>Calculado na confirmação</strong>
+                      <strong>{quoteLoading ? 'Calculando...' : formatMoney(displayTotal)}</strong>
                     </div>
                   </div>
 
-                  <div className="mt-5 rounded-[1.25rem] border p-4 text-sm leading-6" style={{ borderColor: 'var(--line)', backgroundColor: 'rgba(255,250,244,0.52)', color: 'var(--ink-muted)' }}>
-                    Taxa de entrega, descontos e valor final são confirmados antes do seu pedido ser concluído.
+                  <div
+                    className="mt-5 rounded-[1.25rem] border p-4 text-sm leading-6"
+                    style={{
+                      borderColor: 'var(--line)',
+                      backgroundColor: 'rgba(255,250,244,0.52)',
+                      color: 'var(--ink-muted)',
+                    }}
+                  >
+                    {quoteMessage
+                      ? quoteMessage
+                      : quote?.delivery.distanceKm
+                        ? `Distancia estimada: ${quote.delivery.distanceKm.toFixed(1)} km.`
+                        : 'Taxa de entrega, descontos e valor final sao confirmados durante a finalizacao do pedido.'}
                   </div>
                 </aside>
               </div>

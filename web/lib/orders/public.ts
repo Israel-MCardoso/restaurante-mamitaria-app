@@ -314,6 +314,16 @@ function humanizePublicError(code: string, fallback: string) {
     case 'PIX_PAYMENT_CREATION_FAILED':
     case 'PIX_PAYMENT_DATA_MISSING':
       return 'Não foi possível gerar o Pix agora. Tente novamente em instantes.';
+    case 'COUPON_NOT_FOUND':
+      return 'Cupom nao encontrado.';
+    case 'COUPON_INACTIVE':
+      return 'Este cupom nao esta ativo.';
+    case 'COUPON_EXPIRED':
+      return 'Este cupom expirou.';
+    case 'COUPON_LIMIT_REACHED':
+      return 'Este cupom atingiu o limite de uso.';
+    case 'COUPON_MIN_ORDER_NOT_REACHED':
+      return 'Seu pedido ainda nao atingiu o valor minimo para este cupom.';
     case 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD':
       return 'Seu pedido mudou durante a confirmação. Revise os itens e tente novamente.';
     case 'ORDER_CREATION_FAILED':

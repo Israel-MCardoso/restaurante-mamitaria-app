@@ -184,8 +184,8 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
 
   if (!order) {
     return (
-      <main className="page-shell pt-10">
-        <section className="section-shell min-h-screen">
+      <main className="page-shell pt-3 sm:pt-4">
+        <section className="min-h-screen py-4 sm:py-6">
           <div className="content-shell">
             <div className="soft-card flex min-h-[360px] items-center justify-center rounded-[2rem] p-8 text-center">
               <div>
@@ -205,8 +205,8 @@ export function OrderTrackingView({ orderId }: OrderTrackingViewProps) {
   }
 
   return (
-    <main className="page-shell pt-10">
-      <section className="section-shell min-h-screen">
+    <main className="page-shell pt-3 sm:pt-4">
+      <section className="min-h-screen py-4 sm:py-6">
         <div className="content-shell">
           <div className="mb-8 text-center">
             <CheckCircle className="mx-auto mb-4 h-16 w-16 text-green-500" />
