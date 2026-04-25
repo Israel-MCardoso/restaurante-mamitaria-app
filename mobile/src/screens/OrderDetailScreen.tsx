@@ -28,6 +28,7 @@ export default function OrderDetailScreen({ route }: any) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [updatingPayment, setUpdatingPayment] = useState(false);
 
   useEffect(() => {
     fetchOrderDetails();
@@ -81,6 +82,35 @@ export default function OrderDetailScreen({ route }: any) {
     setUpdating(false);
   }
 
+  async function approveCardPayment() {
+    Alert.alert(
+      'Confirmar pagamento',
+      'Confirma que o pagamento no cartao ja caiu na conta da loja?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            setUpdatingPayment(true);
+
+            const { error } = await api.orders.updatePaymentStatus(orderId, 'paid');
+
+            if (error) {
+              Alert.alert('Erro', 'Falha ao atualizar o pagamento do pedido.');
+            } else {
+              setOrder((current: any) => ({ ...current, payment_status: 'paid' }));
+            }
+
+            setUpdatingPayment(false);
+          },
+        },
+      ],
+    );
+  }
+
   if (loading || !order) {
     return (
       <AppScreen>
@@ -92,6 +122,9 @@ export default function OrderDetailScreen({ route }: any) {
   }
 
   const deliveryAddress = order.delivery_address || {};
+  const isCardPayment = String(order.payment_method || '').toLowerCase() === 'card';
+  const canApproveCardPayment =
+    isCardPayment && !['paid', 'approved'].includes(String(order.payment_status || '').toLowerCase());
 
   return (
     <AppScreen scrollable>
@@ -186,6 +219,21 @@ export default function OrderDetailScreen({ route }: any) {
             </Text>
           </View>
         </View>
+
+        {canApproveCardPayment ? (
+          <View style={styles.paymentActions}>
+            <Text style={styles.paymentHelpText}>
+              Quando a loja confirmar o recebimento no banco, toque abaixo para refletir isso no site.
+            </Text>
+            <Button
+              title="Pagamento aprovado"
+              variant="secondary"
+              loading={updatingPayment}
+              disabled={updatingPayment}
+              onPress={approveCardPayment}
+            />
+          </View>
+        ) : null}
       </Card>
     </AppScreen>
   );
@@ -326,6 +374,15 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.darkText,
     fontWeight: '700',
+  },
+  paymentActions: {
+    marginTop: spacing.lg,
+    gap: spacing.md,
+  },
+  paymentHelpText: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
 });
 

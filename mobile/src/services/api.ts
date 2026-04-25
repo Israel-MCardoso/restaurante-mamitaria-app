@@ -256,6 +256,8 @@ export const api = {
       supabase.from('orders').select('*').eq('restaurant_id', restaurantId).order('created_at', { ascending: false }),
     updateStatus: (orderId: string, status: string) =>
       supabase.from('orders').update({ status }).eq('id', orderId),
+    updatePaymentStatus: (orderId: string, payment_status: string) =>
+      supabase.from('orders').update({ payment_status }).eq('id', orderId),
     details: (orderId: string) =>
       supabase.from('orders').select('*, order_items(*, products(*))').eq('id', orderId).maybeSingle(),
   },
