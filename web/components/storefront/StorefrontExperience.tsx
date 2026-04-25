@@ -46,7 +46,7 @@ interface StorefrontCategory {
 }
 
 interface Props {
-  restaurant: { id: string; slug: string; name: string; banner_url?: string | null; logo_url?: string | null };
+  restaurant: { id: string; slug: string; name: string; phone?: string | null; banner_url?: string | null; logo_url?: string | null };
   categories: StorefrontCategory[];
 }
 
@@ -215,7 +215,7 @@ export function StorefrontExperience({ restaurant, categories }: Props) {
 
   return (
     <main className="page-shell pt-10 text-stone-900">
-      <StorefrontRestaurantSync restaurant={{ id: restaurant.id, slug: restaurant.slug, name: restaurant.name }} />
+      <StorefrontRestaurantSync restaurant={{ id: restaurant.id, slug: restaurant.slug, name: restaurant.name, phone: restaurant.phone ?? null }} />
 
       <section className="section-shell pt-6">
         <div className="content-shell">

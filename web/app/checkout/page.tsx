@@ -8,6 +8,7 @@ import type { CreateOrderRequest } from '@/lib/contracts';
 import { useCart } from '@/contexts/CartContext';
 import { useStorefront } from '@/contexts/StorefrontContext';
 import { AppFooter, AppHeader } from '@/components/site/SiteChrome';
+import { buildCardPaymentWhatsAppUrl } from '@/lib/checkout/whatsapp';
 import {
   clearPendingOrderAttempt,
   createPublicOrder,
@@ -55,6 +56,31 @@ export default function CheckoutPage() {
     paymentMethod: 'pix',
     couponCode: '',
   });
+  const allowedPaymentMethods = useMemo(
+    () => (formData.fulfillmentType === 'pickup' ? ['pix', 'card', 'cash'] : ['pix', 'card']),
+    [formData.fulfillmentType],
+  );
+  const paymentOptions = useMemo(
+    () =>
+      [
+        {
+          value: 'pix',
+          title: 'Pix',
+          copy: 'Receba o QR Code e o codigo para pagar logo apos o pedido.',
+        },
+        {
+          value: 'card',
+          title: 'Cartao',
+          copy: 'Pagamento por link/codigo enviado pelo WhatsApp.',
+        },
+        {
+          value: 'cash',
+          title: 'Dinheiro',
+          copy: 'Disponivel apenas para retirada no local.',
+        },
+      ].filter((option) => allowedPaymentMethods.includes(option.value)),
+    [allowedPaymentMethods],
+  );
 
   const quotePayload = useMemo(() => {
     if (!restaurant?.id || items.length === 0) {
@@ -87,6 +113,17 @@ export default function CheckoutPage() {
       coupon_code: formData.couponCode.trim() || null,
     };
   }, [formData.city, formData.couponCode, formData.fulfillmentType, formData.number, formData.street, items, restaurant?.id]);
+
+  useEffect(() => {
+    if (allowedPaymentMethods.includes(formData.paymentMethod)) {
+      return;
+    }
+
+    setFormData((current) => ({
+      ...current,
+      paymentMethod: current.fulfillmentType === 'delivery' ? 'pix' : 'pix',
+    }));
+  }, [allowedPaymentMethods, formData.paymentMethod]);
 
   useEffect(() => {
     if (!quotePayload) {
@@ -206,6 +243,16 @@ export default function CheckoutPage() {
       persistLastOrder(result.order, result.accessToken);
       clearPendingOrderAttempt();
       clearCart();
+
+      if (payload.payment_method === 'card') {
+        const whatsappUrl = buildCardPaymentWhatsAppUrl({
+          order: result.order,
+          restaurantPhone: restaurant.phone,
+        });
+
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      }
+
       router.push(`/order-success/${result.order.order_id}`);
     } catch (error) {
       if (process.env.NODE_ENV !== 'production') {
@@ -413,11 +460,7 @@ export default function CheckoutPage() {
                         Pagamento
                       </span>
                       <div className="grid gap-3 sm:grid-cols-3">
-                        {[
-                          { value: 'pix', title: 'Pix', copy: 'Receba o QR Code e o codigo para pagar logo apos o pedido.' },
-                          { value: 'cash', title: 'Dinheiro', copy: 'Pagamento na entrega.' },
-                          { value: 'card', title: 'Cartao', copy: 'Pagamento na entrega.' },
-                        ].map((option) => (
+                        {paymentOptions.map((option) => (
                           <button
                             key={option.value}
                             type="button"

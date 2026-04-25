@@ -1,11 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 export interface StorefrontRestaurant {
   id: string;
   slug: string;
   name: string;
+  phone?: string | null;
 }
 
 interface StorefrontContextType {
@@ -38,7 +39,7 @@ export function StorefrontProvider({ children }: { children: React.ReactNode }) 
     }
   }, []);
 
-  const setRestaurant = (nextRestaurant: StorefrontRestaurant | null) => {
+  const setRestaurant = useCallback((nextRestaurant: StorefrontRestaurant | null) => {
     setRestaurantState(nextRestaurant);
 
     if (typeof window === 'undefined') {
@@ -55,10 +56,18 @@ export function StorefrontProvider({ children }: { children: React.ReactNode }) 
     } catch {
       // Ignore storage errors and keep runtime state only.
     }
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      restaurant,
+      setRestaurant,
+    }),
+    [restaurant, setRestaurant],
+  );
 
   return (
-    <StorefrontContext.Provider value={{ restaurant, setRestaurant }}>
+    <StorefrontContext.Provider value={value}>
       {children}
     </StorefrontContext.Provider>
   );

@@ -7,6 +7,7 @@ type RestaurantRecord = {
   id: string;
   slug: string;
   name: string;
+  phone?: string | null;
   banner_url?: string | null;
   logo_url?: string | null;
 };
@@ -73,7 +74,7 @@ async function getRestaurant(slug: string) {
 
   const restaurantResponse = await supabase
     .from('restaurants')
-    .select('id, slug, name, banner_url, logo_url')
+    .select('id, slug, name, phone, banner_url, logo_url')
     .eq('slug', slug)
     .eq('is_active', true)
     .maybeSingle();
