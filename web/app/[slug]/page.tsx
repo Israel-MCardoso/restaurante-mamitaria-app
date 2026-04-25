@@ -53,6 +53,7 @@ type ProductOptionRecord = {
   name: string;
   min_select: number;
   max_select: number;
+  is_price_override?: boolean | null;
   position: number | null;
   items: ProductOptionItemRecord[];
 };
@@ -188,7 +189,7 @@ async function getRestaurant(slug: string) {
       if (productIds.length > 0) {
         const productOptionsResponse = await supabase
           .from('product_options')
-          .select('id, product_id, name, min_select, max_select, position')
+          .select('id, product_id, name, min_select, max_select, is_price_override, position')
           .in('product_id', productIds)
           .order('position', { ascending: true });
 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, MessageCircle, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { StorefrontRestaurantSync } from '@/components/storefront/StorefrontRestaurantSync';
+import { isPriceOverrideOptionGroup, resolvePriceOverride } from '@/lib/checkout/priceOverride';
 import { useCart, type CartAddonSelection, type CartOptionSelection } from '@/contexts/CartContext';
 
 interface StorefrontAddon {
@@ -23,6 +24,7 @@ interface StorefrontProductOption {
   name: string;
   min_select: number;
   max_select: number;
+  is_price_override?: boolean | null;
   items: StorefrontOptionItem[];
 }
 
@@ -134,12 +136,25 @@ export function StorefrontExperience({ restaurant, categories }: Props) {
     () => (selectedProduct ? selectedProduct.promo_price ?? selectedProduct.price : 0),
     [selectedProduct],
   );
+  const selectedOptionPricing = useMemo(
+    () =>
+      selectedOptions.map((option) => ({
+        option_id: option.option_id,
+        price_adjustment: option.priceAdjustment,
+      })),
+    [selectedOptions],
+  );
+  const optionPricing = useMemo(
+    () => resolvePriceOverride(selectedProduct?.options ?? [], selectedOptionPricing),
+    [selectedOptionPricing, selectedProduct],
+  );
+  const effectiveConfiguredBasePrice = optionPricing.overridePrice ?? configuredBasePrice;
   const configuredUnitPrice = useMemo(
     () =>
-      configuredBasePrice +
+      effectiveConfiguredBasePrice +
       selectedAddons.reduce((sum, addon) => sum + addon.totalPrice, 0) +
-      selectedOptions.reduce((sum, option) => sum + option.priceAdjustment, 0),
-    [configuredBasePrice, selectedAddons, selectedOptions],
+      optionPricing.additionalOptionsTotal,
+    [effectiveConfiguredBasePrice, optionPricing.additionalOptionsTotal, selectedAddons],
   );
 
   const openConfigurator = (product: StorefrontProduct) => {
@@ -185,7 +200,7 @@ export function StorefrontExperience({ restaurant, categories }: Props) {
       cartKey: buildCartKey(selectedProduct.id, notes, selectedAddons, selectedOptions),
       id: selectedProduct.id,
       name: selectedProduct.name,
-      basePrice: configuredBasePrice,
+      basePrice: effectiveConfiguredBasePrice,
       price: configuredUnitPrice,
       quantity: 1,
       notes,
@@ -330,7 +345,7 @@ export function StorefrontExperience({ restaurant, categories }: Props) {
           selectedOptions={selectedOptions}
           selectedAddonQuantities={selectedAddonQuantities}
           selectedOptionItemIds={selectedOptionItemIds}
-          configuredBasePrice={configuredBasePrice}
+          configuredBasePrice={effectiveConfiguredBasePrice}
           configuredUnitPrice={configuredUnitPrice}
           missingRequiredOptions={missingRequiredOptions}
           changeAddonQuantity={changeAddonQuantity}
@@ -412,11 +427,18 @@ function ProductConfigurator({
                         <div className="mt-4 grid gap-3">
                           {option.items.map((item) => {
                             const selected = selectedItemId === item.id;
+                            const isPriceOverride = isPriceOverrideOptionGroup(option);
                             return (
                               <button key={item.id} type="button" onClick={() => selectOptionItem(option.id, item.id)} className="flex items-center justify-between gap-4 rounded-[1.1rem] border px-4 py-3 text-left transition" style={{ borderColor: selected ? 'rgba(200,135,63,0.5)' : 'var(--line)', backgroundColor: selected ? 'rgba(200,135,63,0.12)' : 'rgba(255,255,255,0.62)' }}>
                                 <div className="min-w-0">
                                   <p className="font-semibold" style={{ color: 'var(--ink-strong)' }}>{item.name}</p>
-                                  <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>{item.price_adjustment > 0 ? `${formatMoney(item.price_adjustment)} adicional` : 'Sem custo adicional'}</p>
+                                  <p className="mt-1 text-sm" style={{ color: 'var(--ink-muted)' }}>
+                                    {isPriceOverride
+                                      ? formatMoney(item.price_adjustment)
+                                      : item.price_adjustment > 0
+                                        ? `${formatMoney(item.price_adjustment)} adicional`
+                                        : 'Sem custo adicional'}
+                                  </p>
                                 </div>
                                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: selected ? 'rgba(200,135,63,0.45)' : 'var(--line)', color: selected ? 'var(--brand)' : 'var(--ink-muted)' }}>{selected ? <Check className="h-4 w-4" /> : <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'currentColor' }} />}</span>
                               </button>

@@ -1,5 +1,6 @@
 import { ApiError } from '@/lib/api/errors';
 import type { CreateOrderRequest } from '@/lib/contracts';
+import { isPriceOverrideOptionGroup, resolvePriceOverride } from '@/lib/checkout/priceOverride';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export type QuoteRequest = Pick<
@@ -65,6 +66,7 @@ type ProductOptionRow = {
   name: string;
   min_select: number | null;
   max_select: number | null;
+  is_price_override: boolean | null;
 };
 
 type ProductOptionItemRow = {
@@ -164,7 +166,7 @@ export async function calculateOrderQuote(
   if (productIds.length > 0) {
     const { data: productOptionsData, error: productOptionsError } = await (supabase as any)
       .from('product_options')
-      .select('id, product_id, name, min_select, max_select')
+      .select('id, product_id, name, min_select, max_select, is_price_override')
       .in('product_id', productIds);
 
     if (productOptionsError) {
@@ -212,10 +214,10 @@ export async function calculateOrderQuote(
 
     const basePrice = toMoney(product.promo_price ?? product.price);
     let addonPerUnit = 0;
-    let optionPerUnit = 0;
     const productOptionGroups = productOptions.get(item.product_id) ?? [];
     const productOptionGroupIds = new Set(productOptionGroups.map((option) => option.id));
     const selectedOptionCounts = new Map<string, number>();
+    const selectedOptionItems: Array<{ option_id: string; price_adjustment: number }> = [];
 
     for (const addonSelection of item.addons ?? []) {
       if (!Number.isInteger(addonSelection.quantity) || addonSelection.quantity <= 0) {
@@ -258,8 +260,17 @@ export async function calculateOrderQuote(
         throw new ApiError(409, 'PRODUCT_OPTION_NOT_ALLOWED', 'One or more required product options are invalid.', 'items');
       }
 
-      optionPerUnit += toMoney(optionItem.price_adjustment);
+      selectedOptionItems.push({
+        option_id: optionSelection.option_id,
+        price_adjustment: toMoney(optionItem.price_adjustment),
+      });
       selectedOptionCounts.set(optionSelection.option_id, (selectedOptionCounts.get(optionSelection.option_id) ?? 0) + 1);
+    }
+
+    const priceOverrideGroups = productOptionGroups.filter(isPriceOverrideOptionGroup);
+
+    if (priceOverrideGroups.length > 1) {
+      throw new ApiError(409, 'PRODUCT_OPTION_PRICE_OVERRIDE_CONFLICT', 'Only one price override group is allowed per product.', 'items');
     }
 
     for (const optionGroup of productOptionGroups) {
@@ -272,7 +283,21 @@ export async function calculateOrderQuote(
       }
     }
 
-    subtotal += (basePrice + addonPerUnit + optionPerUnit) * item.quantity;
+    const { overrideGroup, overrideItem, overridePrice, additionalOptionsTotal } = resolvePriceOverride(
+      productOptionGroups,
+      selectedOptionItems,
+    );
+
+    if (overrideGroup) {
+      const minSelect = Math.max(0, Number(overrideGroup.min_select ?? 0));
+      if (minSelect > 0 && !overrideItem) {
+        throw new ApiError(409, 'PRODUCT_OPTION_REQUIRED', 'One or more required product options are missing.', 'items');
+      }
+    }
+
+    const effectiveBasePrice = overridePrice ?? basePrice;
+
+    subtotal += (effectiveBasePrice + addonPerUnit + additionalOptionsTotal) * item.quantity;
   }
 
   if (subtotal < settings.minOrder) {
