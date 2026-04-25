@@ -48,6 +48,7 @@ export default function DashboardScreen({ navigation }: any) {
   const [restaurantName, setRestaurantName] = useState('Restaurante');
   const [restaurantSlug, setRestaurantSlug] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
@@ -58,12 +59,14 @@ export default function DashboardScreen({ navigation }: any) {
     }
   }, [restaurantId, loadingRestaurant]);
 
-  async function fetchStats() {
+  async function fetchStats(showLoader = true) {
     if (!restaurantId) {
       return;
     }
 
-    setLoading(true);
+    if (showLoader) {
+      setLoading(true);
+    }
     setErrorMessage('');
 
     try {
@@ -91,7 +94,17 @@ export default function DashboardScreen({ navigation }: any) {
       });
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }
+
+  async function handleRefresh() {
+    if (!restaurantId) {
+      return;
+    }
+
+    setRefreshing(true);
+    await fetchStats(false);
   }
 
   const operationalCards = [
@@ -111,7 +124,7 @@ export default function DashboardScreen({ navigation }: any) {
   ].join(', ');
 
   return (
-    <AppScreen scrollable>
+    <AppScreen scrollable refreshing={refreshing} onRefresh={handleRefresh}>
       <PageHeader
         eyebrow="Visao geral"
         title="Dashboard"

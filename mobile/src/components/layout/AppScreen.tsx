@@ -1,5 +1,5 @@
 import React from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -11,6 +11,8 @@ interface AppScreenProps {
   keyboardAware?: boolean;
   contentContainerStyle?: ViewStyle;
   style?: ViewStyle;
+  refreshing?: boolean;
+  onRefresh?: () => void;
 }
 
 export function AppScreen({
@@ -20,6 +22,8 @@ export function AppScreen({
   keyboardAware = false,
   contentContainerStyle,
   style,
+  refreshing = false,
+  onRefresh,
 }: AppScreenProps) {
   const content = scrollable ? (
     <ScrollView
@@ -31,6 +35,11 @@ export function AppScreen({
       ]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
+      refreshControl={
+        onRefresh ? (
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} colors={[colors.primary]} />
+        ) : undefined
+      }
     >
       {children}
     </ScrollView>

@@ -4,15 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, Instagram, Mail, MapPin, MessageCircle, Phone, ShoppingBag } from 'lucide-react';
 import { useCart } from '@/contexts/CartContext';
 import { BrandLogo } from '@/components/site/BrandLogo';
-
-const PHONE_DISPLAY = '+55 15 99144-2274';
-const WHATSAPP_NUMBER = '5515991442274';
-const ADDRESS = 'R. Gustavo Teixeira, 42 - Vila Independência';
-const MAPS_URL = 'https://maps.app.goo.gl/B2EL1dMpC4auAbj96';
-
-function getWhatsAppUrl(message = 'Olá! Gostaria de fazer um pedido.') {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-}
+import { ADDRESS, getWhatsAppUrl, MAPS_URL, PHONE_DISPLAY } from '@/components/site/original-landing/siteConfig';
 
 function CartShortcut({ href, label = 'Carrinho' }: { href: string; label?: string }) {
   const { itemCount } = useCart();

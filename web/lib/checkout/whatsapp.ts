@@ -1,6 +1,5 @@
 import type { CanonicalOrder } from '@/lib/contracts';
-
-const DEFAULT_WHATSAPP_NUMBER = '5515991442274';
+import { WHATSAPP_NUMBER } from '@/components/site/original-landing/siteConfig';
 
 export function buildCardPaymentWhatsAppUrl(args: {
   order: CanonicalOrder;
@@ -55,7 +54,7 @@ function formatOrderItemLines(item: CanonicalOrder['items'][number]) {
 
 function normalizeWhatsAppPhone(value?: string | null) {
   const digits = (value ?? '').replace(/\D/g, '');
-  return digits.length >= 10 ? digits : DEFAULT_WHATSAPP_NUMBER;
+  return digits.length >= 10 ? digits : WHATSAPP_NUMBER;
 }
 
 function formatMoney(value: number) {
