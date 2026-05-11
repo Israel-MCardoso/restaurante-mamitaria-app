@@ -45,12 +45,13 @@ function buildSafeFileName(asset: ImagePickerAsset, extension: string) {
 
 export const storage = {
   async ensureRestaurantId(providedRestaurantId?: string | null) {
-    if (providedRestaurantId) {
-      return providedRestaurantId;
+    const context = await ensureOperationalRestaurantContext();
+
+    if (providedRestaurantId && providedRestaurantId !== context.restaurantId) {
+      throw new Error('Restaurante divergente da sessao autenticada. Refaca o login e tente novamente.');
     }
 
-    const context = await ensureOperationalRestaurantContext();
-    return context.restaurantId;
+    return providedRestaurantId || context.restaurantId;
   },
   async uploadImage(
     restaurantId: string | null | undefined,
@@ -70,6 +71,10 @@ export const storage = {
 
     if (!resolvedRestaurantId) {
       throw new Error('Restaurante nao encontrado. Nao foi possivel identificar o restaurante para o upload.');
+    }
+
+    if (resolvedRestaurantId !== context.restaurantId) {
+      throw new Error('Restaurante divergente da sessao autenticada. Upload bloqueado por seguranca.');
     }
 
     if (!asset.uri) {

@@ -366,6 +366,8 @@ async function resolveOrderRestaurantId(orderId: string, payload: unknown) {
 
 function mapSupabaseError(message: string) {
   const knownMappings: Array<{ pattern: string; status: number; code: string; field?: string }> = [
+    { pattern: 'orders_payment_method_check', status: 400, code: 'INVALID_PAYMENT_METHOD', field: 'payment_method' },
+    { pattern: 'orders_cash_pickup_only_check', status: 400, code: 'CASH_NOT_ALLOWED_FOR_DELIVERY', field: 'payment_method' },
     { pattern: 'ORDER_NOT_FOUND', status: 404, code: 'ORDER_NOT_FOUND', field: 'order_id' },
     { pattern: 'ORDER_ACCESS_DENIED', status: 403, code: 'ORDER_ACCESS_DENIED' },
     { pattern: 'INVALID_ORDER_STATUS', status: 409, code: 'INVALID_ORDER_STATUS', field: 'status' },
@@ -462,6 +464,10 @@ function humanizeErrorCode(code: string) {
       return 'O produto possui uma configuracao invalida de grupo de preco.';
     case 'DELIVERY_ADDRESS_REQUIRED':
       return 'Delivery address is required for delivery orders.';
+    case 'INVALID_PAYMENT_METHOD':
+      return 'Escolha uma forma de pagamento valida para continuar.';
+    case 'CASH_NOT_ALLOWED_FOR_DELIVERY':
+      return 'Dinheiro esta disponivel apenas para retirada no local.';
     case 'INVALID_ITEMS':
       return 'Order must include at least one valid item.';
     case 'INVALID_ITEM_QUANTITY':

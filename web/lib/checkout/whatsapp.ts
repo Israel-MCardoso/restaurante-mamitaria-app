@@ -1,14 +1,22 @@
 import type { CanonicalOrder } from '@/lib/contracts';
-import { WHATSAPP_NUMBER } from '@/components/site/original-landing/siteConfig';
 
 export function buildCardPaymentWhatsAppUrl(args: {
   order: CanonicalOrder;
   restaurantPhone?: string | null;
 }) {
   const phone = normalizeWhatsAppPhone(args.restaurantPhone);
+
+  if (!phone) {
+    throw new Error('RESTAURANT_WHATSAPP_NOT_CONFIGURED');
+  }
+
   const message = buildCardPaymentWhatsAppMessage(args.order);
 
   return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+}
+
+export function hasValidWhatsAppPhone(value?: string | null) {
+  return Boolean(normalizeWhatsAppPhone(value));
 }
 
 export function buildCardPaymentWhatsAppMessage(order: CanonicalOrder) {
@@ -54,7 +62,22 @@ function formatOrderItemLines(item: CanonicalOrder['items'][number]) {
 
 function normalizeWhatsAppPhone(value?: string | null) {
   const digits = (value ?? '').replace(/\D/g, '');
-  return digits.length >= 10 ? digits : WHATSAPP_NUMBER;
+
+  if (!digits) {
+    return null;
+  }
+
+  const withoutLeadingZero = digits.replace(/^0+/, '');
+
+  if (withoutLeadingZero.length === 10 || withoutLeadingZero.length === 11) {
+    return `55${withoutLeadingZero}`;
+  }
+
+  if (withoutLeadingZero.startsWith('55') && (withoutLeadingZero.length === 12 || withoutLeadingZero.length === 13)) {
+    return withoutLeadingZero;
+  }
+
+  return null;
 }
 
 function formatMoney(value: number) {

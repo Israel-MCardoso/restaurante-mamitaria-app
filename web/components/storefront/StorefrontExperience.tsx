@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Check, MessageCircle, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { StorefrontRestaurantSync } from '@/components/storefront/StorefrontRestaurantSync';
+import { hasValidWhatsAppPhone } from '@/lib/checkout/whatsapp';
 import { isPriceOverrideOptionGroup, resolvePriceOverride } from '@/lib/checkout/priceOverride';
 import { useCart, type CartAddonSelection, type CartOptionSelection } from '@/contexts/CartContext';
 
@@ -68,6 +69,15 @@ export function StorefrontExperience({ restaurant, categories }: Props) {
   );
   const totalProducts = useMemo(() => categories.reduce((sum, category) => sum + category.products.length, 0), [categories]);
   const highlightedCategories = useMemo(() => categories.filter((category) => category.products.length > 0).slice(0, 6), [categories]);
+  const restaurantWhatsAppUrl = useMemo(() => {
+    if (!hasValidWhatsAppPhone(restaurant.phone)) {
+      return null;
+    }
+
+    const digits = restaurant.phone?.replace(/\D/g, '').replace(/^0+/, '') ?? '';
+    const phone = digits.startsWith('55') ? digits : `55${digits}`;
+    return `https://wa.me/${phone}?text=${encodeURIComponent(`Ola! Gostaria de pedir na loja ${restaurant.name}.`)}`;
+  }, [restaurant.name, restaurant.phone]);
 
   const selectedAddons = useMemo<CartAddonSelection[]>(() => {
     if (!selectedProduct?.addons?.length) {
@@ -249,7 +259,7 @@ export function StorefrontExperience({ restaurant, categories }: Props) {
                       </div>
                       <div className="grid gap-3 sm:grid-cols-2">
                         <button type="button" onClick={() => setIsCartOpen(true)} className="premium-button px-6 py-3 sm:w-auto">Ver carrinho<ShoppingBag className="h-4 w-4" /></button>
-                        <a href={`https://wa.me/5515991442274?text=${encodeURIComponent(`Ola! Gostaria de pedir na loja ${restaurant.name}.`)}`} target="_blank" rel="noreferrer" className="rounded-full border px-6 py-3 text-center text-sm font-semibold transition hover:bg-white" style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}><span className="inline-flex items-center gap-2"><MessageCircle className="h-4 w-4" />WhatsApp</span></a>
+                        {restaurantWhatsAppUrl ? <a href={restaurantWhatsAppUrl} target="_blank" rel="noreferrer" className="rounded-full border px-6 py-3 text-center text-sm font-semibold transition hover:bg-white" style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}><span className="inline-flex items-center gap-2"><MessageCircle className="h-4 w-4" />WhatsApp</span></a> : null}
                       </div>
                     </div>
                   </div>

@@ -51,7 +51,7 @@ export default function LoginScreen({
       });
 
       if (error) {
-        Alert.alert('Erro ao entrar', error.message);
+        Alert.alert('Erro ao entrar', getSafeLoginErrorMessage(error.message));
       }
     } finally {
       setLoading(false);
@@ -108,6 +108,20 @@ export default function LoginScreen({
       <Text style={styles.footer}>Ambiente administrativo conectado ao Supabase.</Text>
     </AppScreen>
   );
+}
+
+function getSafeLoginErrorMessage(message?: string) {
+  const normalized = (message ?? '').toLowerCase();
+
+  if (
+    normalized.includes('invalid login credentials') ||
+    normalized.includes('invalid_credentials') ||
+    normalized.includes('invalid credentials')
+  ) {
+    return 'E-mail ou senha invalidos.';
+  }
+
+  return 'Nao foi possivel entrar agora. Verifique seus dados e tente novamente.';
 }
 
 const styles = StyleSheet.create({

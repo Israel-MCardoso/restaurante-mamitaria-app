@@ -241,7 +241,19 @@ async function adminApiRequest<T>(path: string, init?: RequestInit): Promise<T> 
   });
 
   const bodyText = await response.text();
-  const parsedBody = bodyText ? JSON.parse(bodyText) : null;
+  let parsedBody: any = null;
+
+  if (bodyText) {
+    try {
+      parsedBody = JSON.parse(bodyText);
+    } catch {
+      parsedBody = {
+        message: response.ok
+          ? 'Recebemos uma resposta inesperada do servidor.'
+          : 'O servidor retornou uma resposta invalida.',
+      };
+    }
+  }
 
   if (!response.ok) {
     throw new Error(parsedBody?.error?.message || parsedBody?.message || 'Não foi possível concluir a operação.');

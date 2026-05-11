@@ -8,7 +8,7 @@ import type { CreateOrderRequest } from '@/lib/contracts';
 import { useCart } from '@/contexts/CartContext';
 import { useStorefront } from '@/contexts/StorefrontContext';
 import { AppFooter, AppHeader } from '@/components/site/SiteChrome';
-import { buildCardPaymentWhatsAppUrl } from '@/lib/checkout/whatsapp';
+import { buildCardPaymentWhatsAppUrl, hasValidWhatsAppPhone } from '@/lib/checkout/whatsapp';
 import {
   clearPendingOrderAttempt,
   createPublicOrder,
@@ -198,6 +198,11 @@ export default function CheckoutPage() {
 
     if (!restaurant?.id) {
       setFeedbackMessage('Volte ao cardapio e escolha seus itens novamente antes de finalizar.');
+      return;
+    }
+
+    if (formData.paymentMethod === 'card' && !hasValidWhatsAppPhone(restaurant.phone)) {
+      setFeedbackMessage('Pagamento por cartao indisponivel no momento: o WhatsApp da loja nao esta configurado.');
       return;
     }
 

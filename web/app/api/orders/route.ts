@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ensureApiError, errorResponseBody, parseJsonBody } from '@/lib/api/errors';
+import { ApiError, ensureApiError, errorResponseBody, parseJsonBody } from '@/lib/api/errors';
 import { createOrder } from '@/lib/api/orders';
 
 export async function POST(request: Request) {
@@ -37,18 +37,30 @@ export async function POST(request: Request) {
 }
 
 function serializeOrderError(error: unknown) {
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (error instanceof ApiError) {
+    return {
+      name: error.name,
+      status: error.status,
+      code: error.code,
+      field: error.field ?? null,
+      message: error.message,
+    };
+  }
+
   if (error instanceof Error) {
     const details: Record<string, unknown> = {
       name: error.name,
       message: error.message,
-      stack: error.stack ?? null,
+      stack: isProduction ? null : error.stack ?? null,
     };
 
     if ('cause' in error) {
       details.cause = error.cause ?? null;
     }
 
-     if ('details' in error) {
+    if (!isProduction && 'details' in error) {
       details.details = (error as { details?: unknown }).details ?? null;
     }
 

@@ -453,6 +453,13 @@ export function validateCanonicalOrder(value: unknown): ContractValidationIssue[
     issues.push({ field: 'fulfillment_type', message: 'fulfillment_type is invalid.' });
   }
 
+  if (value.payment_method === 'cash' && value.fulfillment_type === 'delivery') {
+    issues.push({
+      field: 'payment_method',
+      message: 'cash payment is only allowed for pickup orders.',
+    });
+  }
+
   if (!Array.isArray(value.items) || value.items.length === 0) {
     issues.push({ field: 'items', message: 'items must be a non-empty array.' });
   } else {

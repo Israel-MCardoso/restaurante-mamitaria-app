@@ -19,9 +19,13 @@ export const metadata = {
   title: 'Família Mineira | Marmitaria e Doceria',
   description: 'Peça online pratos caseiros preparados com sabor de comida feita em casa.',
   icons: {
-    icon: '/daiana-xavier.png',
-    shortcut: '/daiana-xavier.png',
-    apple: '/daiana-xavier.png',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon.png', type: 'image/png', sizes: '512x512' },
+      { url: '/icon-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 

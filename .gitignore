@@ -3,6 +3,7 @@
 Thumbs.db
 .idea/
 .vscode/
+.claude/
 
 # Environment files
 .env
@@ -17,11 +18,16 @@ web/.npm-cache/
 web/npm-debug.log*
 web/yarn-debug.log*
 web/yarn-error.log*
+desktop-app/node_modules/
+desktop-app/release/
+desktop-app/dist/
+desktop-app/.env
 
 # Mobile / Expo / React Native
 mobile/node_modules/
 mobile/.expo/
 mobile/.expo-shared/
+mobile/.gradle-user-home/
 mobile/npm-debug.log*
 mobile/yarn-debug.log*
 mobile/yarn-error.log*
@@ -32,6 +38,11 @@ mobile/android/build/
 mobile/android/local.properties
 mobile/android/app/build/
 mobile/android/app/debug.keystore
+mobile/android/keystore.properties
+mobile/android/*.jks
+mobile/android/*.keystore
+mobile/android/app/*.jks
+mobile/android/app/*.keystore
 *.apk
 *.aab
 
