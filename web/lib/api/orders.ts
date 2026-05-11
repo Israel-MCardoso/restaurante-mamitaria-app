@@ -56,6 +56,7 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
   const orderQuote = await calculateOrderQuote(payload as any, { strictCoupon: true });
   const securePayload = {
     ...(payload as Record<string, unknown>),
+    delivery_address: normalizeDeliveryAddressForStorage(payload),
     delivery_fee_override: orderQuote.deliveryFee,
     discount_amount_override: orderQuote.discountAmount,
   };
@@ -101,6 +102,29 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
     idempotentReplay: response?.idempotent_replay === true,
     accessToken,
   };
+}
+
+function normalizeDeliveryAddressForStorage(payload: unknown) {
+  if (
+    payload &&
+    typeof payload === 'object' &&
+    (payload as { fulfillment_type?: unknown }).fulfillment_type === 'pickup' &&
+    ((payload as { delivery_address?: unknown }).delivery_address === null ||
+      (payload as { delivery_address?: unknown }).delivery_address === undefined)
+  ) {
+    return {
+      street: 'Retirada',
+      number: 'S/N',
+      neighborhood: null,
+      city: 'Retirada',
+      state: null,
+      zip_code: null,
+      complement: null,
+      reference: null,
+    };
+  }
+
+  return (payload as { delivery_address?: unknown }).delivery_address ?? null;
 }
 
 export async function getOrderById(orderId: string, accessToken: string): Promise<CanonicalOrder> {
