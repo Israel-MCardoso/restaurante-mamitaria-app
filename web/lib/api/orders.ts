@@ -54,9 +54,15 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
   const normalizedIdempotencyKey = idempotencyKey.trim();
   const requestHash = hashRequestPayload(payload);
   const orderQuote = await calculateOrderQuote(payload as any, { strictCoupon: true });
+  const useLegacyPickupWorkaround = shouldUseLegacyPickupStorageWorkaround(payload);
   const securePayload = {
     ...(payload as Record<string, unknown>),
-    delivery_address: normalizeDeliveryAddressForStorage(payload),
+    ...(useLegacyPickupWorkaround
+      ? {
+          fulfillment_type: 'delivery',
+          delivery_address: createPickupDeliveryAddress(),
+        }
+      : {}),
     delivery_fee_override: orderQuote.deliveryFee,
     discount_amount_override: orderQuote.discountAmount,
   };
@@ -72,7 +78,7 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
   }
 
   const response = data as CreateOrderRpcResponse | null;
-  const order = response?.order;
+  let order = response?.order;
   const accessToken = response?.access_token;
 
   if (!order) {
@@ -81,6 +87,10 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
 
   if (!accessToken || accessToken.trim().length === 0) {
     throw new ApiError(500, 'INVALID_ORDER_RESPONSE', 'Não foi possível concluir seu pedido agora. Tente novamente em instantes.');
+  }
+
+  if (useLegacyPickupWorkaround) {
+    order = await restorePickupOrderAfterLegacyInsert(order.order_id, accessToken);
   }
 
   const orderIssues = validateCanonicalOrder(order);
@@ -97,11 +107,56 @@ export async function createOrder(payload: unknown, idempotencyKey: string): Pro
 
   const hydratedOrder = await maybeAttachPixPayment(order, payload);
 
+  if (useLegacyPickupWorkaround) {
+    await syncIdempotentOrderResponse(hydratedOrder.order_id, hydratedOrder);
+  }
+
   return {
     order: hydratedOrder,
     idempotentReplay: response?.idempotent_replay === true,
     accessToken,
   };
+}
+
+function shouldUseLegacyPickupStorageWorkaround(payload: unknown) {
+  return (
+    payload !== null &&
+    typeof payload === 'object' &&
+    (payload as { fulfillment_type?: unknown }).fulfillment_type === 'pickup' &&
+    ((payload as { delivery_address?: unknown }).delivery_address === null ||
+      (payload as { delivery_address?: unknown }).delivery_address === undefined)
+  );
+}
+
+function createPickupDeliveryAddress() {
+  return {
+    street: 'Retirada',
+    number: 'S/N',
+    neighborhood: null,
+    city: 'Retirada',
+    state: null,
+    zip_code: null,
+    complement: null,
+    reference: null,
+  };
+}
+
+async function restorePickupOrderAfterLegacyInsert(orderId: string, accessToken: string): Promise<CanonicalOrder> {
+  const supabase = getSupabaseAdminClient();
+  const { error } = await supabase
+    .from('orders')
+    .update({
+      fulfillment_type: 'pickup',
+      delivery_fee: 0,
+      delivery_address: createPickupDeliveryAddress(),
+    } as never)
+    .eq('id', orderId);
+
+  if (error) {
+    throw mapSupabaseError(error.message);
+  }
+
+  return getOrderById(orderId, accessToken);
 }
 
 function normalizeDeliveryAddressForStorage(payload: unknown) {
