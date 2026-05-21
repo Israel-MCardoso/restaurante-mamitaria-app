@@ -185,7 +185,12 @@ function toastIcon(tone: UiMessageTone) {
 }
 
 function escapeHtml(value: string) {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 function readFileAsDataUrl(file: File) {
@@ -3044,22 +3049,81 @@ function render() {
   renderDashboard(state);
 }
 
-async function bootstrap() {
-  const [nextState, nextPrinters, nextUsbPrinters, nextQzPrinters] = await Promise.all([
-    window.desktopApp.getState(),
-    window.desktopApp.listPrinters(),
-    window.desktopApp.listUsbPrinters(),
-    window.desktopApp.listQzPrinters(),
-  ]);
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 
-  state = nextState;
-  syncSettingsDraft(nextState, true);
-  printerOptions = nextPrinters;
-  usbPrinterOptions = nextUsbPrinters;
-  qzStatus = nextQzPrinters.status;
-  qzPrinterOptions = nextQzPrinters.printers;
-  seenAlertOrderIds = new Set(nextState.currentOrders.map((order) => order.id));
-  render();
+async function loadStartupPeripherals() {
+  window.desktopApp
+    .listPrinters()
+    .then((nextPrinters) => {
+      printerOptions = nextPrinters;
+      render();
+    })
+    .catch(async (error: unknown) => {
+      await window.desktopApp.logRendererEvent('warn', 'Falha ao carregar impressoras do sistema no bootstrap.', {
+        error: getErrorMessage(error),
+      });
+    });
+
+  window.desktopApp
+    .listUsbPrinters()
+    .then((nextUsbPrinters) => {
+      usbPrinterOptions = nextUsbPrinters;
+      render();
+    })
+    .catch(async (error: unknown) => {
+      await window.desktopApp.logRendererEvent('warn', 'Falha ao carregar impressoras USB no bootstrap.', {
+        error: getErrorMessage(error),
+      });
+    });
+
+  window.desktopApp
+    .listQzPrinters()
+    .then((nextQzPrinters) => {
+      qzStatus = nextQzPrinters.status;
+      qzPrinterOptions = nextQzPrinters.printers;
+      render();
+    })
+    .catch(async (error: unknown) => {
+      qzStatus = {
+        connected: false,
+        running: false,
+        installed: false,
+        state: 'not_found',
+        version: null,
+        error: 'Para imprimir automaticamente, instale e abra o QZ Tray.',
+      };
+      qzPrinterOptions = [];
+      await window.desktopApp.logRendererEvent('warn', 'Falha ao carregar impressoras QZ no bootstrap.', {
+        error: getErrorMessage(error),
+      });
+      render();
+    });
+}
+
+async function bootstrap() {
+  try {
+    const nextState = await window.desktopApp.getState();
+    state = nextState;
+    syncSettingsDraft(nextState, true);
+    seenAlertOrderIds = new Set(nextState.currentOrders.map((order) => order.id));
+    render();
+    void loadStartupPeripherals();
+  } catch (error) {
+    app.innerHTML = `
+      <main class="login-shell">
+        <section class="login-card">
+          <h1>Restaurante Desktop</h1>
+          <p class="notice error">Nao foi possivel iniciar a interface local.</p>
+        </section>
+      </main>
+    `;
+    await window.desktopApp.logRendererEvent('error', 'Falha critica no bootstrap do renderer.', {
+      error: getErrorMessage(error),
+    });
+    return;
+  }
 
   window.desktopApp.onStateChanged(async (nextState: DesktopAppState) => {
     const previousState = state;

@@ -17,6 +17,9 @@ def hasReleaseSigning =
     releaseStorePassword?.trim() &&
     releaseKeyAlias?.trim() &&
     releaseKeyPassword?.trim()
+def isReleaseTask = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase().contains("release")
+}
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
@@ -129,7 +132,7 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            if (!hasReleaseSigning) {
+            if (!hasReleaseSigning && isReleaseTask) {
                 throw new GradleException("Missing Android release signing configuration. Define RELEASE_STORE_FILE, RELEASE_STORE_PASSWORD, RELEASE_KEY_ALIAS and RELEASE_KEY_PASSWORD in mobile/android/keystore.properties or environment variables.")
             }
             signingConfig signingConfigs.release

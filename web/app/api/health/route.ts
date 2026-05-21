@@ -141,7 +141,21 @@ async function runSchemaChecks() {
   };
 }
 
-export async function GET() {
+function canRunDetailedHealthCheck(request: Request) {
+  if (process.env.NODE_ENV !== 'production') {
+    return true;
+  }
+
+  const expectedSecret = process.env.HEALTH_CHECK_SECRET?.trim();
+
+  if (!expectedSecret) {
+    return false;
+  }
+
+  return request.headers.get('x-health-check-secret') === expectedSecret;
+}
+
+export async function GET(request: Request) {
   const checks = {
     nextPublicSupabaseUrl: hasEnv('NEXT_PUBLIC_SUPABASE_URL'),
     nextPublicSupabaseAnonKey: hasEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY'),
@@ -167,6 +181,22 @@ export async function GET() {
       },
       {
         status: 503,
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      },
+    );
+  }
+
+  if (!canRunDetailedHealthCheck(request)) {
+    return NextResponse.json(
+      {
+        ok: true,
+        message: 'ServiÃ§o disponÃ­vel.',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        status: 200,
         headers: {
           'Cache-Control': 'no-store',
         },

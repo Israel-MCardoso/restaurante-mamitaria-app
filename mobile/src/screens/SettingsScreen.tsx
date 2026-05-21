@@ -53,6 +53,7 @@ async function launchSettingsImagePicker() {
 
 export default function SettingsScreen() {
   const { restaurantId, loading: restaurantLoading, error: restaurantError, debug } = useRestaurant();
+  const showDebugDiagnostics = __DEV__;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -373,6 +374,7 @@ export default function SettingsScreen() {
             title="Restaurante não carregado"
             description={restaurantError || 'Não foi possível encontrar um restaurante vinculado ao usuário atual.'}
           />
+          {showDebugDiagnostics ? (
           <View style={styles.debugBox}>
             <Text style={styles.debugTitle}>Diagnóstico</Text>
             <Text style={styles.debugText}>user_id: {debug.userId || '-'}</Text>
@@ -381,6 +383,7 @@ export default function SettingsScreen() {
             <Text style={styles.debugText}>metadata.restaurant_id: {debug.metadataRestaurantId || '-'}</Text>
             <Text style={styles.debugText}>resolvedRestaurantId: {debug.resolvedRestaurantId || '-'}</Text>
           </View>
+          ) : null}
         </Card>
       </AppScreen>
     );
