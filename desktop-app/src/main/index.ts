@@ -703,12 +703,19 @@ async function listSystemPrinters() {
   }
 
   const printers = await mainWindow.webContents.getPrintersAsync();
-  const mapped = printers.map((printerOption) => ({
-    name: printerOption.name,
-    description: printerOption.description,
-    isDefault: printerOption.isDefault,
-    status: printerOption.status,
-  }));
+  const mapped = printers.map((printerOption) => {
+    const printerDetails = printerOption as {
+      isDefault?: boolean;
+      status?: number | string;
+    };
+
+    return {
+      name: printerOption.name,
+      description: printerOption.description,
+      isDefault: printerDetails.isDefault ?? false,
+      status: typeof printerDetails.status === 'number' ? printerDetails.status : 0,
+    };
+  });
   logger.info('[PRINT][PRINTERS] windows-list-requested', {
     count: mapped.length,
     found: mapped.map((printerOption) => printerOption.name),

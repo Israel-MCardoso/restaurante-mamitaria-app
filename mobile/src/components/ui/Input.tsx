@@ -55,6 +55,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
+    ...typography.body,
     height: 52,
     backgroundColor: colors.surface,
     borderRadius: radius.md,
@@ -62,7 +63,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     color: colors.darkText,
-    ...typography.body,
   },
   inputFocused: {
     borderColor: colors.primary,

@@ -163,11 +163,13 @@ export async function resolveRestaurantContext(activeSession?: Session | null): 
   });
 
   const cached = await readCachedRestaurantContext();
-  let session = activeSession ? { data: { session: activeSession } } : null;
+  let sessionResponse: { data: { session: Session | null } } | null = activeSession
+    ? { data: { session: activeSession } }
+    : null;
 
-  if (!session) {
+  if (!sessionResponse) {
     try {
-      session = await withTimeout(supabase.auth.getSession(), SESSION_TIMEOUT_MS, 'A leitura da sessao autenticada');
+      sessionResponse = await withTimeout(supabase.auth.getSession(), SESSION_TIMEOUT_MS, 'A leitura da sessao autenticada');
     } catch (error: any) {
       console.error('[restaurant-context] failed to load auth session', {
         message: error?.message ?? 'unknown error',
@@ -181,7 +183,7 @@ export async function resolveRestaurantContext(activeSession?: Session | null): 
     }
   }
 
-  const user = session.data.session?.user ?? null;
+  const user = sessionResponse.data.session?.user ?? null;
 
   if (!user) {
     await safeDeleteCachedRestaurantContext('no-authenticated-user');
